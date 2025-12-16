@@ -1,6 +1,19 @@
 ######################  参数设置区开始  ######################
 t = {
-'股票池' : ['COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'META', 'HOOD', 'TSM', 'MSTR', 'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL', 'SMCI', 'NVDA', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN', 'SATS', 'LITE', 'WDC', 'RIVN'],
+'股票池' : [
+    'COIN', 'APP', 'RKLB', 
+    'ORCL', 'IONQ', 'FUTU', 
+    'META', 'HOOD', 'TSM', 
+    'MSTR', 'BE', 'HIMS', 
+    'MP', 'TSLA', 'BABA', 
+    'INTC', 'AMD', 'PDD', 
+    'MRVL', 'DELL', 'SMCI', 
+    'NVDA', 'CRDO', 'MU', 
+    'PLTR', 'NFLX', 'LLY', 
+    'LULU', 'CIEN', 'SATS', 
+    'LITE', 'WDC', 'RIVN',
+    'BIDU', 'NOW', 'COHR'
+    ],
 '开盘时间' : '2230',   #北京时间 
 '收盘时间' : '0500',   #北京时间 
 'ATR周期' : 14,
@@ -84,7 +97,8 @@ def loop():
     else:
         startTime = (datetime.now() - timedelta(days=1)).replace(hour=int(t['开盘时间'][:2]), minute=int(t['开盘时间'][2:]), second=0, microsecond=0)
         endTime = datetime.now().replace(hour=int(t['收盘时间'][:2]), minute=int(t['收盘时间'][2:]), second=0, microsecond=0)
-    if datetime.now() < startTime + timedelta(minutes=10) or datetime.now() >= endTime:
+    if datetime.now() < startTime + timedelta(minutes=5) or datetime.now() >= endTime:
+    # if datetime.now() < startTime + timedelta(minutes=10) or datetime.now() >= endTime: // 可以控制开盘后多少分钟开始交易
         s.cap = 0
         s.isEnd = False
         s.infoDict = {}
@@ -221,11 +235,11 @@ def loop():
                 show(f'获取{quote.symbol}的K线失败:{e}')
                 continue  
 
-        if quote.last_done > up + up * Decimal(0.00015) and quote.last_done > vwap:     #max(quote.last_done * Decimal(0.00015), Decimal(0.1 * atr))
+        if quote.last_done > up + up * Decimal(0.00015) and quote.open < up + up * Decimal(0.00015) and quote.last_done > vwap:     #max(quote.last_done * Decimal(0.00015), Decimal(0.1 * atr))
             if quote.symbol in s.longStockList:
                 continue
             isBuy = True
-        elif quote.last_done < down - down * Decimal(0.00015) and quote.last_done < vwap:     #max(quote.last_done * Decimal(0.00015), Decimal(0.1 * atr))
+        elif quote.last_done < down - down * Decimal(0.00015) and quote.open > down - down * Decimal(0.00015) and quote.last_done < vwap:     #max(quote.last_done * Decimal(0.00015), Decimal(0.1 * atr))
             if quote.symbol in s.shortStockList:
                 continue
             isBuy = False
