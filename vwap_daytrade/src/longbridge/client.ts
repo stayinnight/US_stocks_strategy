@@ -1,15 +1,36 @@
-const { Config, QuoteContext, TradeContext } = require('longport');
+import { Config, QuoteContext, TradeContext } from 'longport';
 
-const config = new Config({
-  app_key: process.env.LB_APP_KEY,
-  app_secret: process.env.LB_APP_SECRET,
-  access_token: process.env.LB_ACCESS_TOKEN,
-});
+let quoteCtx: null | Promise<QuoteContext> = null;
+let tradeCtx: null | Promise<TradeContext> = null;
+let config: null | Config = null;
 
-const quoteCtx = QuoteContext.new(config);
-const tradeCtx = TradeContext.new(config);
+const getConfig = () => {
+  if (!config) {
+    config = new Config({
+      appKey: process.env.LONGPORT_APP_KEY as string,
+      appSecret: process.env.LONGPORT_APP_SECRET as string,
+      accessToken: process.env.LONGPORT_ACCESS_TOKEN as string,
+      enablePrintQuotePackages: false,
+    });
+  }
+  return config;
+}
+
+const getQuoteCtx = () => {
+  if (!quoteCtx) {
+    quoteCtx = QuoteContext.new(getConfig());
+  }
+  return quoteCtx;
+}
+
+const getTradeCtx = () => {
+  if (!tradeCtx) {
+    tradeCtx = TradeContext.new(getConfig());
+  }
+  return tradeCtx;
+}
 
 export {
-  quoteCtx,
-  tradeCtx,
+  getQuoteCtx,
+  getTradeCtx,
 };

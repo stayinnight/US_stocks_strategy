@@ -1,4 +1,13 @@
+import { OrderSide } from 'longport';
+
 class SymbolState {
+  traded: boolean;
+  position: OrderSide | null;
+  entryPrice: number | null;
+  qty: number;
+  stopPrice: number | null;
+  halfClosed: boolean;
+
   constructor() {
     this.traded = false;
 
