@@ -1,5 +1,6 @@
 import { Decimal, OrderSide, OrderType, TimeInForceType } from 'longport';
 import { getTradeCtx } from './client';
+import { logger } from '../utils/logger';
 
 /**
  * 下单
@@ -11,7 +12,7 @@ async function placeOrder({ symbol, side, qty }: {
   side: OrderSide,
   qty: number
 }) {
-  console.log(`[ORDER] ${symbol} ${side} ${qty}`);
+  logger.info(`[ORDER] ${symbol} ${side} ${qty}`);
   const c = await getTradeCtx();
   return c.submitOrder({
     symbol,
@@ -45,7 +46,7 @@ async function closeAllPositions() {
     if (curr.availableQuantity.toNumber() === 0) continue;
     const side = curr.availableQuantity.toNumber() > 0 ? OrderSide.Sell : OrderSide.Buy;
 
-    console.log(
+    logger.info(
       `[FORCE CLOSE] ${curr.symbol} qty=${curr.availableQuantity}`
     );
 

@@ -6,10 +6,9 @@ import { Candlestick, Decimal } from 'longport';
 import config from '../../config/strategy.config';
 
 import { getDailyBars } from "../../longbridge/market";
+import { logger } from '../../utils/logger';
 
 const { atr } = require('trading-indicator')
-
-export const atrMap: Record<string, number> = {};
 
 async function calcATR(dailyBars: Candlestick[]) {
   const input = {
@@ -31,19 +30,26 @@ async function calcATR(dailyBars: Candlestick[]) {
   return curATR;
 }
 
-async function preloadATR() {
-  console.log('📐 计算前一交易日 ATR');
-  for (const symbol of config.symbols) {
-    const dailyBars = await getDailyBars(symbol, config.atrPeriod * 2);
-    const atr = await calcATR(dailyBars);
-    if (atr) {
-      atrMap[symbol] = atr;
-      console.log(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
+class ATRManager {
+  private atrMap: Record<string, number> = {};
+
+  async preloadATR() {
+    logger.info('📐 计算前一交易日 ATR');
+    for (const symbol of config.symbols) {
+      const dailyBars = await getDailyBars(symbol, config.atrPeriod * 2);
+      const atr = await calcATR(dailyBars);
+      if (atr) {
+        this.atrMap[symbol] = atr;
+        logger.info(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
+      }
     }
+  }
+
+  getATR(symbol: string) {
+    return this.atrMap[symbol];
   }
 }
 
 export {
-  preloadATR,
-  calcATR,
+  ATRManager
 };

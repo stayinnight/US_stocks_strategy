@@ -7,9 +7,7 @@ function getETMinutes() {
   const now = new Date();
 
   // 转为美东时间
-  const et = new Date(
-    now.toLocaleString('en-US', { timeZone: 'America/New_York' })
-  );
+  const et = new Date(now.toLocaleString());
 
   return et.getHours() * 60 + et.getMinutes();
 }
@@ -25,9 +23,9 @@ function isTradableTime(openDelayMin: number, closeAheadMin: number) {
   const tradeStart = config.marketOpenMinutes + openDelayMin;
   const tradeEnd = config.marketCloseMinutes - closeAheadMin;
 
-  return nowMin > tradeStart && nowMin < tradeEnd;
+  return nowMin > tradeStart || nowMin < tradeEnd;
 }
 
-module.exports = {
+export {
   isTradableTime,
 };

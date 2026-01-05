@@ -5,6 +5,7 @@ import { StrategyConfig } from "../interface/config";
 import { calcVWAP } from "../core/indicators/vwap";
 import { placeOrder, getAccountEquity } from "../longbridge/trade";
 import { calcPositionSize } from "../core/position";
+import { logger } from "../utils/logger";
 
 class VWAPStrategy {
     config: StrategyConfig;
@@ -75,7 +76,7 @@ class VWAPStrategy {
             !state.halfClosed &&
             dir * (price - vwap) >= this.config.tpProtectAtrRatio * atr
         ) {
-            console.log(`[TP1] ${symbol} 半仓止盈`);
+            logger.info(`[TP1] ${symbol} 半仓止盈`);
 
             await placeOrder({
                 symbol,
@@ -92,8 +93,8 @@ class VWAPStrategy {
         if (
             dir * (price - vwap) >= this.config.tpFinalAtrRatio * atr
         ) {
-            console.log(`[TP2] ${symbol} 全部平仓`);
-            placeOrder({
+            logger.info(`[TP2] ${symbol} 全部平仓`);
+            await placeOrder({
                 symbol,
                 side: state.position === OrderSide.Buy ? OrderSide.Sell : OrderSide.Buy,
                 qty: state.qty,
@@ -107,8 +108,8 @@ class VWAPStrategy {
             state.stopPrice &&
             dir * (price - state.stopPrice) <= 0
         ) {
-            console.log(`[STOP] ${symbol} 止损触发`);
-            placeOrder({
+            logger.info(`[STOP] ${symbol} 止损触发`);
+            await placeOrder({
                 symbol,
                 side: state.position === OrderSide.Buy ? OrderSide.Sell : OrderSide.Buy,
                 qty: state.qty,
@@ -129,7 +130,7 @@ class VWAPStrategy {
 
         if (qty <= 0) return;
 
-        console.log(`[ENTRY] ${symbol} ${side} qty=${qty}`);
+        logger.info(`[ENTRY] ${symbol} ${side} qty=${qty}`);
 
         await placeOrder({
             symbol,

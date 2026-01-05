@@ -1,3 +1,5 @@
+import { resolve } from 'path'
+
 export default {
   // ========================
   // 长桥openapi配置
@@ -22,7 +24,7 @@ export default {
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
     'SMCI', 'NVDA', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
     'SATS', 'LITE', 'WDC', 'RIVN', 'BIDU', 'NOW', 'COHR'
-  ],
+  ].map(s => s + '.US'),
 
   barInterval: '1min',
 
@@ -44,8 +46,8 @@ export default {
   noTradeAfterOpenMinutes: 5,
   noTradeBeforeCloseMinutes: 15,
 
-  marketOpenMinutes: 10 * 60 + 30, // 10:30
-  marketCloseMinutes: 15 * 60,    // 15:00
+  marketOpenMinutes: 10 * 60 + 30, // 开盘 10:30
+  marketCloseMinutes: 5 * 60,    // 收盘 5:00
   // marketOpenMinutes: 9 * 60 + 30, // 09:30
   // marketCloseMinutes: 16 * 60,    // 16:00
 

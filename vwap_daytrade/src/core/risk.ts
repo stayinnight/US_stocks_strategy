@@ -1,3 +1,5 @@
+import { logger } from "../utils/logger";
+
 /**
  * 风险控制模块
  */
@@ -20,7 +22,7 @@ class RiskManager {
     const dd = (this.startEquity - equity) / this.startEquity;
     if (dd >= this.maxDrawdown) {
       this.stopped = true;
-      console.log(`[RISK] ❌ 最大回撤触发: ${(dd * 100).toFixed(2)}%`);
+      logger.error(`[RISK] ❌ 最大回撤触发: ${(dd * 100).toFixed(2)}%`);
     }
   }
 
@@ -52,7 +54,7 @@ class DailyRiskManager {
     this.startEquity = equity;
     this.tradingHalted = false;
 
-    console.log(
+    logger.info(
       `[RISK] 📊 当日初始净值: ${equity.toFixed(2)}`
     );
   }
@@ -69,7 +71,7 @@ class DailyRiskManager {
     if (drawdown >= this.maxDrawdown) {
       this.tradingHalted = true;
 
-      console.log(
+      logger.error(
         `[RISK] ❌ 触发单日最大回撤 ${(drawdown * 100).toFixed(2)}%`
       );
 
