@@ -22,16 +22,14 @@ export default {
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
     'SMCI', 'NVDA', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
     'SATS', 'LITE', 'WDC', 'RIVN', 'BIDU', 'NOW', 'COHR'
-  ],
-
-  barInterval: '1min',
+  ].map(s => s + '.US'),
 
   // ========================
   // VWAP 区间参数
   // ========================
   vwapBandAtrRatio: 0.1,
-  tpProtectAtrRatio: 0.3,
-  tpFinalAtrRatio: 0.5,
+  tpProtectAtrRatio: 0.2,
+  tpFinalAtrRatio: 0.3,
 
   // ========================
   // ATR 区间参数
@@ -41,11 +39,12 @@ export default {
   // ========================
   // 时间限制（美股时间，分钟）
   // ========================
-  noTradeAfterOpenMinutes: 5,
-  noTradeBeforeCloseMinutes: 15,
+  noTradeAfterOpenMinutes: 5, // 开盘前5分钟不交易
+  noTradeBeforeCloseMinutes: 20, // 收盘前20分钟不交易
+  closeTimeMinutes: 10, // 尾盘平仓时间
 
-  marketOpenMinutes: 10 * 60 + 30, // 10:30
-  marketCloseMinutes: 15 * 60,    // 15:00
+  marketOpenMinutes: 22 * 60 + 30, // 开盘 10:30
+  marketCloseMinutes: 5 * 60,    // 收盘 5:00
   // marketOpenMinutes: 9 * 60 + 30, // 09:30
   // marketCloseMinutes: 16 * 60,    // 16:00
 

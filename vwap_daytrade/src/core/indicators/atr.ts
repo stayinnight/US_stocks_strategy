@@ -6,44 +6,48 @@ import { Candlestick, Decimal } from 'longport';
 import config from '../../config/strategy.config';
 
 import { getDailyBars } from "../../longbridge/market";
+import { logger } from '../../utils/logger';
 
-const { atr } = require('trading-indicator')
-
-export const atrMap: Record<string, number> = {};
+import { atr } from 'technicalindicators'
+import { ATRInput } from 'technicalindicators/declarations/directionalmovement/ATR';
 
 async function calcATR(dailyBars: Candlestick[]) {
-  const input = {
-    open: [] as Decimal[],
-    high: [] as Decimal[],
-    low: [] as Decimal[],
-    close: [] as Decimal[],
-    volume: [] as number[],
+  const input: ATRInput = {
+    high: [] as number[],
+    low: [] as number[],
+    close: [] as number[],
+    period: config.atrPeriod,
   }
   dailyBars.forEach((bar, i) => {
-    input.open.push(bar.open);
-    input.high.push(bar.high);
-    input.low.push(bar.low);
-    input.close.push(bar.close);
-    input.volume.push(bar.volume);
+    input.high.push(bar.high.toNumber());
+    input.low.push(bar.low.toNumber());
+    input.close.push(bar.close.toNumber());
   })
-  const atrArr = await atr(config.atrPeriod, "close", input)
-  const curATR = atrArr.at(-1)
-  return curATR;
+  const atrArr = atr(input)
+  return atrArr[atrArr.length - 1];
 }
 
-async function preloadATR() {
-  console.log('📐 计算前一交易日 ATR');
-  for (const symbol of config.symbols) {
-    const dailyBars = await getDailyBars(symbol, config.atrPeriod * 2);
-    const atr = await calcATR(dailyBars);
-    if (atr) {
-      atrMap[symbol] = atr;
-      console.log(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
+class ATRManager {
+  private atrMap: Record<string, number> = {};
+
+  async preloadATR() {
+    logger.info('📐 计算前一交易日 ATR');
+    for (const symbol of config.symbols) {
+      const dailyBars = await getDailyBars(symbol, config.atrPeriod * 2);
+      const atr = await calcATR(dailyBars);
+      if (atr) {
+        this.atrMap[symbol] = atr;
+        logger.info(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
+      }
     }
+    return this.atrMap;
+  }
+
+  getATR(symbol: string) {
+    return this.atrMap[symbol];
   }
 }
 
 export {
-  preloadATR,
-  calcATR,
+  ATRManager
 };

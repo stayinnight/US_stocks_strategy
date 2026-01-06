@@ -1,5 +1,7 @@
 import { Decimal, OrderSide, OrderType, TimeInForceType } from 'longport';
 import { getTradeCtx } from './client';
+import { logger } from '../utils/logger';
+import config from '../config/strategy.config'
 
 /**
  * 下单
@@ -11,7 +13,6 @@ async function placeOrder({ symbol, side, qty }: {
   side: OrderSide,
   qty: number
 }) {
-  console.log(`[ORDER] ${symbol} ${side} ${qty}`);
   const c = await getTradeCtx();
   return c.submitOrder({
     symbol,
@@ -28,7 +29,7 @@ async function placeOrder({ symbol, side, qty }: {
  */
 async function getAccountEquity() {
   const c = await getTradeCtx();
-  const res = await c.accountBalance();
+  const res = await c.accountBalance("USD");
   return Number(res[0].netAssets);
 }
 
@@ -38,22 +39,23 @@ async function getAccountEquity() {
  */
 async function closeAllPositions() {
   const c = await getTradeCtx();
-  const positions = await c.stockPositions();
+  const positions = await c.stockPositions(config.symbols);
 
   for (const pos of positions.channels) {
-    const [curr] = pos.positions;
-    if (curr.availableQuantity.toNumber() === 0) continue;
-    const side = curr.availableQuantity.toNumber() > 0 ? OrderSide.Sell : OrderSide.Buy;
-
-    console.log(
-      `[FORCE CLOSE] ${curr.symbol} qty=${curr.availableQuantity}`
-    );
-
-    await placeOrder({
-      symbol: curr.symbol,
-      side,
-      qty: Math.abs(curr.availableQuantity.toNumber()),
-    });
+    for (const c of pos.positions) {
+      if (c.availableQuantity.toNumber() === 0) continue;
+      const side = c.availableQuantity.toNumber() > 0 ? OrderSide.Sell : OrderSide.Buy;
+      
+      logger.info(
+        `[FORCE CLOSE] ${c.symbol} qty=${c.availableQuantity}`
+      );
+      
+      await placeOrder({
+        symbol: c.symbol,
+        side,
+        qty: Math.abs(c.availableQuantity.toNumber()),
+      });
+    }
   }
 }
 

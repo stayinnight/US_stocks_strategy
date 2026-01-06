@@ -4,9 +4,9 @@ import { getQuoteCtx } from './client';
 /**
  * 获取 1 分钟 K 线
  */
-async function getMinuteBars(symbol: string, count = 1) {
+async function getMinuteBars(symbol: string, count = 2) {
   const c = await getQuoteCtx();
-  const [res] = await c.candlesticks(
+  const res = await c.candlesticks(
     symbol,
     Period.Min_1,
     count,
@@ -45,8 +45,17 @@ async function getDailyBars(symbol: string, count = 14) {
   );
 }
 
+/**
+ * 获取标的实时行情
+ */
+async function getQuote(symbols: string[]) {
+  const c = await getQuoteCtx();
+  return await c.quote(symbols);
+}
+
 export {
   getMinuteBars,
+  getQuote,
   getFiveMinuteBars,
   getDailyBars,
 };
