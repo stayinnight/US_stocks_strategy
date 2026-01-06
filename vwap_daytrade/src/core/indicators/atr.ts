@@ -8,26 +8,23 @@ import config from '../../config/strategy.config';
 import { getDailyBars } from "../../longbridge/market";
 import { logger } from '../../utils/logger';
 
-const { atr } = require('trading-indicator')
+import { atr } from 'technicalindicators'
+import { ATRInput } from 'technicalindicators/declarations/directionalmovement/ATR';
 
 async function calcATR(dailyBars: Candlestick[]) {
-  const input = {
-    open: [] as Decimal[],
-    high: [] as Decimal[],
-    low: [] as Decimal[],
-    close: [] as Decimal[],
-    volume: [] as number[],
+  const input: ATRInput = {
+    high: [] as number[],
+    low: [] as number[],
+    close: [] as number[],
+    period: config.atrPeriod,
   }
   dailyBars.forEach((bar, i) => {
-    input.open.push(bar.open);
-    input.high.push(bar.high);
-    input.low.push(bar.low);
-    input.close.push(bar.close);
-    input.volume.push(bar.volume);
+    input.high.push(bar.high.toNumber());
+    input.low.push(bar.low.toNumber());
+    input.close.push(bar.close.toNumber());
   })
-  const atrArr = await atr(config.atrPeriod, "close", input)
-  const curATR = atrArr.at(-1)
-  return curATR;
+  const atrArr = atr(input)
+  return atrArr[atrArr.length - 1];
 }
 
 class ATRManager {
@@ -43,6 +40,7 @@ class ATRManager {
         logger.info(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
       }
     }
+    return this.atrMap;
   }
 
   getATR(symbol: string) {

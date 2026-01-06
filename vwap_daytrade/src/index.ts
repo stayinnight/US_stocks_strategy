@@ -4,50 +4,65 @@ import { getMinuteBars } from './longbridge/market';
 import { getAccountEquity, closeAllPositions } from './longbridge/trade';
 import { sleep } from './utils/sleep';
 import { initTradeEnv } from './core/env';
-import { DailyRiskManager } from './core/risk';
+import { RiskManager } from './core/risk';
 import { ATRManager } from './core/indicators/atr';
-import { isTradableTime } from './core/timeGuard';
+import { isMarketCloseTime, isTradableTime } from './core/timeGuard';
 import { logger } from './utils/logger';
+import { RealTimeMarket } from './core/realTimeMarket';
 
 const Koa = require('koa');
 const app = new Koa();
 const PORT = 3000;
 
 async function startLoop() {
+    let strategy: VWAPStrategy | null = null;
+    let dailyRisk: RiskManager | null = null;
+    let atrManager: ATRManager | null = null;
+    let inited = false;
 
     while (true) {
         // 频率控制，防止请求太多打满cpu、被长桥限流
-        await sleep(1000);
+        await sleep(2000);
 
-        let strategy: VWAPStrategy | null = null;
-        let dailyRisk: DailyRiskManager | null = null;
-        let atrManager: ATRManager | null = null;
-        let inited = false;
+        // 尾盘平仓
+        if (isMarketCloseTime(config.closeTimeMinutes)) {
+            await closeAllPositions();
+            logger.info('[RISK] 📊 尾盘全平');
+            continue;
+        }
 
         // 非交易时间，跳过
         if (!isTradableTime(config.noTradeAfterOpenMinutes, config.noTradeBeforeCloseMinutes)) {
             // 非交易时间清空状态
             strategy = null;
             dailyRisk = null;
+            atrManager = null;
             inited = false;
             continue;
         }
 
         // ===== 交易日初始化 =====
-        const init = async () => {
+        const initContext = async () => {
             atrManager = new ATRManager();
-            await atrManager.preloadATR();
-            dailyRisk = new DailyRiskManager(config.maxDailyDrawdown);
+            dailyRisk = new RiskManager(config.maxDailyDrawdown);
             strategy = new VWAPStrategy(config, dailyRisk);
+
+            await atrManager.preloadATR();
+            logger.debug(`ATR 预热完成`);
+            
             const startEquity = await getAccountEquity();
             dailyRisk.initDay(startEquity);
+            logger.debug(`[RISK] 初始化日风险控制，初始净值 ${startEquity}`);
+
+            logger.info(`初始化结束`);
         }
 
-        const trade = async () => {
-            // ===== 正常策略执行 =====
+        // ===== 正常策略执行 =====
+        const trade = async (realTimeMarket: RealTimeMarket) => {
             const tasks = config.symbols.map(async symbol => {
-                const bar = await getMinuteBars(symbol);
-                await strategy?.onBar(symbol, bar, atrManager!.getATR(symbol));
+                // 取前一分钟的k线来判断
+                const [bar] = await getMinuteBars(symbol, 2);
+                await strategy?.onBar(symbol, bar, atrManager!.getATR(symbol), realTimeMarket);
             });
             await Promise.all(tasks);
         }
@@ -55,25 +70,26 @@ async function startLoop() {
         try {
             // init每天只执行一次
             if (!inited) {
-                await init();
+                await initContext();
                 inited = true;
             }
             const equity = await getAccountEquity();
             // ===== 最高优先级：账户回撤检查 =====
-            const halted = dailyRisk!.check(equity);
-            if (halted) {
+            const shouldStop = dailyRisk!.check(equity);
+            if (shouldStop) {
                 logger.fatal('[RISK] 🚨 强制平仓并停止交易');
                 await closeAllPositions();
-                // 当日直接退出主循环
-                break;
+                continue;
             }
-            // ===== 正常策略执行 =====
-            await trade();
+            // 初始化实时行情信息
+            const realTimeMarket = new RealTimeMarket();
+            await realTimeMarket.init(config.symbols);
+
+            await trade(realTimeMarket);
         } catch (e: any) {
             logger.error(e.message);
         }
     }
-    logger.info('[RISK] 🛑 今日交易结束');
 }
 
 async function init() {
@@ -83,11 +99,10 @@ async function init() {
 }
 
 init().then(_ => {
-    logger.info('🚀 VWAP 日内策略启动');
     startLoop();
     // SERVER START
     app.listen(PORT, () => {
-        logger.info(`Koa server is running on port ${PORT}`);
+        logger.info(`🚀 VWAP 日内策略启动`);
     });
 }).catch((e) =>
     logger.fatal(e.message)

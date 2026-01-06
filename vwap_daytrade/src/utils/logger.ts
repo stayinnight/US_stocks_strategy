@@ -1,5 +1,6 @@
 import fs from 'fs'
-import { resolve } from 'path'
+import { resolve, parse } from 'path'
+import dayjs from 'dayjs'
 
 type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug';
 
@@ -21,25 +22,28 @@ if (!fs.existsSync(logDir)) {
 }
 
 const logLevelFiles = {
-    fatal: resolve(logDir, 'fatal.log'),
-    error: resolve(logDir, 'error.log'),
-    warn: resolve(logDir, 'warn.log'),
-    info: resolve(logDir, 'info.log'),
-    debug: resolve(logDir, 'debug.log'),
+    fatal: 'fatal.log',
+    error: 'error.log',
+    warn: 'warn.log',
+    info: 'info.log',
+    debug: 'debug.log',
 }
 
 const loggerStdout = (...args: any[]) => console.log(...args);
 
 // create log files if not exist
 for (const [logLevel, logFile] of Object.entries(logLevelFiles)) {
-    if (!fs.existsSync(logFile)) {
-        fs.writeFileSync(logFile, '');
+    const logFilePath = resolve(logDir, dayjs(Date.now()).format('YYYY-MM-DD'), logFile);
+    if (!fs.existsSync(logFilePath)) {
+        const logFileDir = parse(logFilePath).dir;
+        fs.mkdirSync(logFileDir, { recursive: true });
+        fs.writeFileSync(logFilePath, '');
     }
     logger[logLevel as LogLevel] = (...args: any[]) => {
-        const stream = fs.createWriteStream(logFile, {
+        const stream = fs.createWriteStream(logFilePath, {
             flags: 'a' 
         });
-        stream.write(`${new Date().toISOString()} `);
+        stream.write(`${dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss')} `);
         stream.write(args.join(' ') + '\n');
         loggerStdout(...args);
         stream.end();

@@ -1,18 +1,19 @@
 import { Candlestick, OrderSide } from "longport";
-import { DailyRiskManager } from "../core/risk";
+import { RiskManager } from "../core/risk";
 import SymbolState from "../core/state";
 import { StrategyConfig } from "../interface/config";
 import { calcVWAP } from "../core/indicators/vwap";
 import { placeOrder, getAccountEquity } from "../longbridge/trade";
 import { calcPositionSize } from "../core/position";
 import { logger } from "../utils/logger";
+import { RealTimeMarket } from "../core/realTimeMarket";
 
 class VWAPStrategy {
     config: StrategyConfig;
-    dailyRisk: DailyRiskManager;
+    dailyRisk: RiskManager;
     states: Record<string, SymbolState>;
 
-    constructor(config: StrategyConfig, dailyRisk: DailyRiskManager) {
+    constructor(config: StrategyConfig, dailyRisk: RiskManager) {
         this.config = config;
         this.dailyRisk = dailyRisk;
         this.states = {};
@@ -26,7 +27,7 @@ class VWAPStrategy {
      * @param atr ATR值
      * @returns 开仓方向（Buy/Sell）或null（不能开仓）
      */
-    canOpen(symbol: string, price: number, vwap: number, atr: number) {
+    canOpen(symbol: string, open: number, close: number, vwap: number, atr: number) {
         if (!this.dailyRisk.canTrade()) {
             return null;
         }
@@ -37,13 +38,15 @@ class VWAPStrategy {
         };
 
         let dir = null;
-        if ((price - vwap) >= this.config.tpProtectAtrRatio * atr) {
-            dir = OrderSide.Sell;
-        } else if ((vwap - price) >= this.config.tpProtectAtrRatio * atr) {
+        if (close > vwap + this.config.vwapBandAtrRatio * atr && open < vwap + this.config.vwapBandAtrRatio * atr) {
             dir = OrderSide.Buy;
+        } else if (close < vwap - this.config.vwapBandAtrRatio * atr && open > vwap - this.config.vwapBandAtrRatio * atr) {
+            dir = OrderSide.Sell;
         }
 
         if (!dir) return null;
+
+        logger.info(`[OPEN] ${symbol} 开仓方向: ${dir} VWAP: ${vwap} ATR: ${atr} OPEN: ${open} CLOSE: ${close}`);
 
         return dir;
     }
@@ -55,11 +58,17 @@ class VWAPStrategy {
         return this.states[symbol];
     }
 
-    async onBar(symbol: string, bar: Candlestick, atr: number) {
-        const vwap = await calcVWAP([bar]);
-        const dir = this.canOpen(symbol, bar.close.toNumber(), vwap, atr);
+    async onBar(
+        symbol: string,
+        bar: Candlestick,
+        atr: number,
+        realTimeMarket: RealTimeMarket
+    ) {
+        const quote = realTimeMarket.getQuote(symbol);
+        const vwap = await calcVWAP(quote);
+        const dir = this.canOpen(symbol, bar.open.toNumber(), bar.close.toNumber(), vwap, atr);
         if (dir) {
-            return this.open(symbol, dir, bar.close.toNumber());
+            return this.open(symbol, dir, bar.close.toNumber(), vwap, atr);
         } else {
             return this.managePosition(symbol, bar.close.toNumber(), vwap, atr);
         }
@@ -77,16 +86,17 @@ class VWAPStrategy {
             dir * (price - vwap) >= this.config.tpProtectAtrRatio * atr
         ) {
             logger.info(`[TP1] ${symbol} 半仓止盈`);
+            const qty = Math.floor(state.qty / 2);
 
             await placeOrder({
                 symbol,
                 side: state.position === OrderSide.Buy ? OrderSide.Sell : OrderSide.Buy,
-                qty: state.qty / 2,
+                qty,
             });
 
             state.halfClosed = true;
             state.stopPrice = state.entryPrice; // 保本
-            state.qty = state.qty - state.qty / 2;
+            state.qty = state.qty - qty;
         }
 
         // ===== 最终止盈 =====
@@ -103,7 +113,7 @@ class VWAPStrategy {
             state.reset();
         }
 
-        // ===== 移动止损 ===== TODO
+        // ===== 移动止损 ===== 
         if (
             state.stopPrice &&
             dir * (price - state.stopPrice) <= 0
@@ -119,7 +129,7 @@ class VWAPStrategy {
         }
     }
 
-    async open(symbol: string, side: OrderSide, price: number) {
+    async open(symbol: string, side: OrderSide, price: number, vwap: number, atr: number) {
         const equity = await getAccountEquity();
 
         const qty = calcPositionSize({
@@ -130,7 +140,7 @@ class VWAPStrategy {
 
         if (qty <= 0) return;
 
-        logger.info(`[ENTRY] ${symbol} ${side} qty=${qty}`);
+        logger.info(`[ENTRY] ${symbol} ${side} qty=${qty} price=${price}`);
 
         await placeOrder({
             symbol,
@@ -142,6 +152,9 @@ class VWAPStrategy {
         state.traded = true;
         state.position = side;
         state.entryPrice = price;
+        state.stopPrice = side === OrderSide.Buy ?
+            vwap - this.config.vwapBandAtrRatio * atr :
+            vwap + this.config.vwapBandAtrRatio * atr;
         state.qty = qty;
     }
 }

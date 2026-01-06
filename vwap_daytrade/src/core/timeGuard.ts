@@ -26,6 +26,16 @@ function isTradableTime(openDelayMin: number, closeAheadMin: number) {
   return nowMin > tradeStart || nowMin < tradeEnd;
 }
 
+/**
+ * 是否是尾盘全平时间
+ */
+function isMarketCloseTime(closeMin: number) {
+  const nowMin = getETMinutes();
+  const tradeEnd = config.marketCloseMinutes - closeMin;
+  return nowMin === tradeEnd;
+}
+
 export {
   isTradableTime,
+  isMarketCloseTime
 };

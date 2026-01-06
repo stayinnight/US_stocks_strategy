@@ -2,26 +2,10 @@
 /**
  * VWAP & ATR 计算模块
  */
-import { Candlestick, Decimal } from "longport";
-const { vwap } = require('trading-indicator')
+import { SecurityQuote } from "longport";
 
-async function calcVWAP(bars: Candlestick[]) {
-  const input = {
-    open: [] as Decimal[],
-    high: [] as Decimal[],
-    low: [] as Decimal[],
-    close: [] as Decimal[],
-    volume: [] as number[],
-  }
-  bars.forEach((bar, i) => {
-    input.open.push(bar.open);
-    input.high.push(bar.high);
-    input.low.push(bar.low);
-    input.close.push(bar.close);
-    input.volume.push(bar.volume);
-  })
-  const vwapArr = await vwap(input);
-  return vwapArr.at(-1);
+async function calcVWAP(quote: SecurityQuote) {
+  return quote.turnover.toNumber() / quote.volume;
 }
 
 function calcVWAPBands(vwap: number, atr: number, ratio: number) {
