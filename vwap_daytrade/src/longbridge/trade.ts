@@ -23,6 +23,11 @@ async function placeOrder({ symbol, side, qty }: {
   });
 }
 
+async function getOrderDetail(orderId: string) {
+    const c = await getTradeCtx();
+    return await c.orderDetail(orderId);
+}
+
 /**
  * 获取账户总资产
  * @returns 
@@ -30,7 +35,10 @@ async function placeOrder({ symbol, side, qty }: {
 async function getAccountEquity() {
   const c = await getTradeCtx();
   const res = await c.accountBalance("USD");
-  return Number(res[0].netAssets);
+  return {
+    netAssets: Number(res[0].netAssets),
+    buyPower: Number(res[0].buyPower),
+  }
 }
 
 /**
@@ -46,7 +54,7 @@ async function closeAllPositions() {
       if (c.availableQuantity.toNumber() === 0) continue;
       const side = c.availableQuantity.toNumber() > 0 ? OrderSide.Sell : OrderSide.Buy;
       
-      logger.info(
+      logger.warn(
         `[FORCE CLOSE] ${c.symbol} qty=${c.availableQuantity}`
       );
       
@@ -63,5 +71,6 @@ async function closeAllPositions() {
 export {
   placeOrder,
   getAccountEquity,
-  closeAllPositions
+  closeAllPositions,
+  getOrderDetail,
 };

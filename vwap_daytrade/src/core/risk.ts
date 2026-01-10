@@ -39,6 +39,7 @@ class RiskManager {
       logger.error(
         `[RISK] ❌ 触发单日最大回撤 ${(drawdown * 100).toFixed(2)}%，当前权益 ${equity.toFixed(2)}， 初始权益 ${this.startEquity.toFixed(2)}`
       );
+      logger.fatal('[RISK] 🚨 强制平仓并停止交易');
 
       return true;
     }

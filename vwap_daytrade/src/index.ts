@@ -1,7 +1,7 @@
 import config from './config/strategy.config';
 import VWAPStrategy from './strategy/vwapStrategy';
-import { getMinuteBars } from './longbridge/market';
-import { getAccountEquity, closeAllPositions } from './longbridge/trade';
+import { getMinuteBars, getQuote } from './longbridge/market';
+import { getAccountEquity, closeAllPositions, placeOrder, getOrderDetail } from './longbridge/trade';
 import { sleep } from './utils/sleep';
 import { initTradeEnv } from './core/env';
 import { RiskManager } from './core/risk';
@@ -21,8 +21,8 @@ async function startLoop() {
     let inited = false;
 
     while (true) {
-        // 频率控制，防止请求太多打满cpu、被长桥限流
-        await sleep(2000);
+        // 每5秒执行一次
+        await sleep(1000 * 5);
 
         // 尾盘平仓
         if (isMarketCloseTime(config.closeTimeMinutes)) {
@@ -49,8 +49,8 @@ async function startLoop() {
 
             await atrManager.preloadATR();
             logger.debug(`ATR 预热完成`);
-            
-            const startEquity = await getAccountEquity();
+
+            const { netAssets: startEquity } = await getAccountEquity();
             dailyRisk.initDay(startEquity);
             logger.debug(`[RISK] 初始化日风险控制，初始净值 ${startEquity}`);
 
@@ -73,11 +73,10 @@ async function startLoop() {
                 await initContext();
                 inited = true;
             }
-            const equity = await getAccountEquity();
+            const { netAssets: equity } = await getAccountEquity();
             // ===== 最高优先级：账户回撤检查 =====
             const shouldStop = dailyRisk!.check(equity);
             if (shouldStop) {
-                logger.fatal('[RISK] 🚨 强制平仓并停止交易');
                 await closeAllPositions();
                 continue;
             }
