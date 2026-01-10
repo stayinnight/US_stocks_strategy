@@ -27,11 +27,12 @@ export default {
   // ========================
   // VWAP 区间参数
   // ========================
-  vwapBandAtrRatio: 0.1,
-  tpProtectAtrRatio: 0.2,
-  tpFinalAtrRatio: 0.3,
+  vwapBandAtrRatio: 0.05,
+  stopAtrRatio: 0.2,
+  // tpProtectAtrRatio: 0.2,
+  // tpFinalAtrRatio: 0.25,
 
-  // ========================
+  // ==================f======
   // ATR 区间参数
   // ========================
   atrPeriod: 14,
@@ -58,9 +59,4 @@ export default {
   // ========================
   maxDailyDrawdown: 0.02,
   positionPctPerTrade: 0.2,
-
-  // ========================
-  // 日内约束
-  // ========================
-  maxTradePerSymbolPerDay: 1,
 };

@@ -40,7 +40,7 @@ async function getDailyBars(symbol: string, count = 14) {
     symbol,
     Period.Day,
     count,
-    AdjustType.NoAdjust,
+    AdjustType.ForwardAdjust,
     TradeSessions.Intraday
   );
 }

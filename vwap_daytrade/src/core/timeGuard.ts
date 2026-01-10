@@ -5,10 +5,7 @@ import config from '../config/strategy.config';
 
 function getETMinutes() {
   const now = new Date();
-
-  // 转为美东时间
   const et = new Date(now.toLocaleString());
-
   return et.getHours() * 60 + et.getMinutes();
 }
 
@@ -31,8 +28,11 @@ function isTradableTime(openDelayMin: number, closeAheadMin: number) {
  */
 function isMarketCloseTime(closeMin: number) {
   const nowMin = getETMinutes();
-  const tradeEnd = config.marketCloseMinutes - closeMin;
-  return nowMin === tradeEnd;
+  
+  const start = config.marketCloseMinutes - closeMin;
+  const end = config.marketCloseMinutes;
+  
+  return nowMin >= start && nowMin <= end;
 }
 
 export {
