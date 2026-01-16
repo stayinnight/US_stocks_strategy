@@ -6,19 +6,24 @@ import { sleep } from './utils/sleep';
 import { initTradeEnv } from './core/env';
 import { RiskManager } from './core/risk';
 import { ATRManager } from './core/indicators/atr';
-import { isMarketCloseTime, isTradableTime } from './core/timeGuard';
+import { getETMinutes, isMarketCloseTime, isTradableTime } from './core/timeGuard';
 import { logger } from './utils/logger';
-import { RealTimeMarket } from './core/realTimeMarket';
+import { Market } from './core/realTimeMarket';
+import { getBarLength } from './utils';
 
 const Koa = require('koa');
 const app = new Koa();
 const PORT = 3000;
 
-async function startLoop() {
+async function loop() {
     let strategy: VWAPStrategy | null = null;
     let dailyRisk: RiskManager | null = null;
     let atrManager: ATRManager | null = null;
     let inited = false;
+
+    // 异步行情更新
+    const market = new Market();
+    market.start();
 
     while (true) {
         // 每5秒执行一次
@@ -58,11 +63,15 @@ async function startLoop() {
         }
 
         // ===== 正常策略执行 =====
-        const trade = async (realTimeMarket: RealTimeMarket) => {
+        const trade = async (market: Market) => {
             const tasks = config.symbols.map(async symbol => {
-                // 取前一分钟的k线来判断
-                const [bar] = await getMinuteBars(symbol, 2);
-                await strategy?.onBar(symbol, bar, atrManager!.getATR(symbol), realTimeMarket);
+                const bars = await getMinuteBars(symbol, getBarLength());
+                await strategy?.onBar(
+                    symbol,
+                    bars,
+                    atrManager!.getATR(symbol),
+                    market
+                );
             });
             await Promise.all(tasks);
         }
@@ -80,11 +89,11 @@ async function startLoop() {
                 await closeAllPositions();
                 continue;
             }
-            // 初始化实时行情信息
-            const realTimeMarket = new RealTimeMarket();
-            await realTimeMarket.init(config.symbols);
 
-            await trade(realTimeMarket);
+            // 初始化实时行情信息
+            await market.initMarketQuote(config.symbols);
+
+            await trade(market);
         } catch (e: any) {
             logger.error(e.message);
         }
@@ -98,7 +107,9 @@ async function init() {
 }
 
 init().then(_ => {
-    startLoop();
+    // 主交易循环
+    loop();
+
     // SERVER START
     app.listen(PORT, () => {
         logger.info(`🚀 VWAP 日内策略启动`);

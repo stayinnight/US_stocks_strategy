@@ -28,14 +28,30 @@ export default {
   // VWAP 区间参数
   // ========================
   vwapBandAtrRatio: 0.05,
+  vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
   stopAtrRatio: 0.2,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
-  // ==================f======
+  // ========================
   // ATR 区间参数
   // ========================
   atrPeriod: 14,
+
+  // ========================
+  // RSI 区间参数
+  // ========================
+  rsiPeriod: 6,
+  rsiBuyThreshold: 55,
+  rsiSellThreshold: 45,
+
+  // ========================
+  // 成交量 区间参数
+  // ========================
+  volumePeriod: 15, 
+  volumeEntryThreshold: 1.2,
+  breakVolumePeriod: 5, // 突破区间
+  postVolumePeriod: 10, // 和过去10分钟成交量对比
 
   // ========================
   // 时间限制（美股时间，分钟）

@@ -35,7 +35,21 @@ function isMarketCloseTime(closeMin: number) {
   return nowMin >= start && nowMin <= end;
 }
 
+/**
+ * 是否是交易时间
+ */
+function isTradeTime() {
+  const nowMin = getETMinutes();
+
+  const tradeStart = config.marketOpenMinutes;
+  const tradeEnd = config.marketCloseMinutes;
+
+  return nowMin > tradeStart || nowMin < tradeEnd;
+}
+
 export {
   isTradableTime,
-  isMarketCloseTime
+  isMarketCloseTime,
+  getETMinutes,
+  isTradeTime
 };

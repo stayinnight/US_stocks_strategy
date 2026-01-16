@@ -35,9 +35,10 @@ async function getOrderDetail(orderId: string) {
 async function getAccountEquity() {
   const c = await getTradeCtx();
   const res = await c.accountBalance("USD");
+  const json = res[0].toJSON();
   return {
-    netAssets: Number(res[0].netAssets),
     buyPower: Number(res[0].buyPower),
+    netAssets: Number(json.netAssets) || 0,
   }
 }
 
