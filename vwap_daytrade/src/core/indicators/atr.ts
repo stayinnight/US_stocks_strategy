@@ -2,7 +2,7 @@
  * 使用日线 K 线计算 ATR(14)
  * ATR = EMA(TR, 14)
  */
-import { Candlestick, Decimal } from 'longport';
+import { Candlestick } from 'longport';
 import config from '../../config/strategy.config';
 
 import { getDailyBars } from "../../longbridge/market";

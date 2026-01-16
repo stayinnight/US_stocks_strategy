@@ -14,7 +14,7 @@
     "build": "dts build",
     "build:watch": "dts watch",
     "start": "TRADE_ENV=test nodemon",
-    "start:prod": "TRADE_ENV=prod node dist/index.js",
+    "start:prod": "pm2 start pm2.config.js",
     "start:watch": "concurrently \"npm run build:watch\" \"npm run start\""
   },
   "husky": {
@@ -60,6 +60,7 @@
     "koa": "^3.1.1",
     "longport": "^3.0.18",
     "nodemon": "^3.1.11",
+    "pm2": "^6.0.14",
     "technicalindicators": "^3.1.0",
     "ts-node": "^10.9.2"
   }
