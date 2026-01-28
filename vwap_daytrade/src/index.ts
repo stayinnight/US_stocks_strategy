@@ -1,12 +1,12 @@
 import config from './config/strategy.config';
 import VWAPStrategy from './strategy/vwapStrategy';
-import { getMinuteBars, getQuote } from './longbridge/market';
-import { getAccountEquity, closeAllPositions, placeOrder, getOrderDetail } from './longbridge/trade';
+import { getMinuteBars } from './longbridge/market';
+import { getAccountEquity, closeAllPositions } from './longbridge/trade';
 import { sleep } from './utils/sleep';
 import { initTradeEnv } from './core/env';
 import { RiskManager } from './core/risk';
 import { ATRManager } from './core/indicators/atr';
-import { getETMinutes, isMarketCloseTime, isTradableTime } from './core/timeGuard';
+import { isMarketCloseTime, isTradableTime } from './core/timeGuard';
 import { logger } from './utils/logger';
 import { Market } from './core/realTimeMarket';
 import { getBarLength } from './utils';
@@ -107,12 +107,15 @@ async function init() {
 }
 
 init().then(_ => {
-    // 主交易循环
-    loop();
+    // 初始化交易之前，先清空所有持仓
+    closeAllPositions().then(_ => {
+        // 主交易循环
+        loop();
 
-    // SERVER START
-    app.listen(PORT, () => {
-        logger.info(`🚀 VWAP 日内策略启动`);
+        // SERVER START
+        app.listen(PORT, () => {
+            logger.info(`🚀 VWAP 日内策略启动`);
+        });
     });
 }).catch((e) =>
     logger.fatal(e.message)
