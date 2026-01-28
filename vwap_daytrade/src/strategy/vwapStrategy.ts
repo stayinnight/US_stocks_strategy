@@ -77,6 +77,12 @@ class VWAPStrategy {
             currPrice > vwap + this.config.vwapBandAtrRatio * atr &&
             preHigh < vwap + this.config.vwapBandAtrRatio * atr
         ) {
+            // judge长度为0时，直接开仓
+            // if (count === 0) {
+            //     dir = OrderSide.Buy;
+            // }
+
+            // count不为0时，判断指标是否符合要求
             if (
                 judges.volumes &&
                 judges.volumes.recentVolume > judges.volumes.pastVolume * this.config.volumeEntryThreshold
@@ -105,6 +111,12 @@ class VWAPStrategy {
             currPrice < vwap - this.config.vwapBandAtrRatio * atr &&
             preLow > vwap - this.config.vwapBandAtrRatio * atr
         ) {
+            // judge长度为0时，直接开仓
+            // if (count === 0) {
+            //     dir = OrderSide.Sell;
+            // }
+
+            // count不为0时，判断指标是否符合要求
             if (judges.volumes && judges.volumes.recentVolume > judges.volumes.pastVolume * this.config.volumeEntryThreshold) {
                 logger.info(symbol, 'volumesPass', judges.volumes)
                 score++;
@@ -126,6 +138,8 @@ class VWAPStrategy {
             } else if (count === 2 && score >= 1) {
                 dir = OrderSide.Sell;
             } else if (count === 1 && score >= 1) {
+                dir = OrderSide.Sell;
+            } else if (count === 0) {
                 dir = OrderSide.Sell;
             }
             logger.info(count, score, dir)

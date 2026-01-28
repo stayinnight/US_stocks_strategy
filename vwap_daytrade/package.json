@@ -62,6 +62,7 @@
     "nodemon": "^3.1.11",
     "pm2": "^6.0.14",
     "technicalindicators": "^3.1.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "lowdb": "^7.0.1"
   }
 }
