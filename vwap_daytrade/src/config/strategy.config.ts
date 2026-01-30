@@ -1,4 +1,4 @@
-export default {
+const Config = {
   // ========================
   // 长桥openapi配置
   // ========================
@@ -18,10 +18,10 @@ export default {
   // 基础参数
   // ========================
   symbols: [
-    'COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'META', 'HOOD', 'TSM', 'MSTR',
+    'COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'HOOD', 'TSM', 'MSTR',
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
-    'SMCI', 'NVDA', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
-    'SATS', 'LITE', 'WDC', 'RIVN', 'BIDU', 'NOW', 'COHR'
+    'SMCI', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
+    'SATS', 'LITE', 'WDC', 'RIVN', 'NOW', 'COHR', 'FCX', 'STX'
   ].map(s => s + '.US'),
 
   // ========================
@@ -29,7 +29,7 @@ export default {
   // ========================
   vwapBandAtrRatio: 0.05,
   vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
-  stopAtrRatio: 0.2,
+  stopAtrRatio: 0.15,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
@@ -76,3 +76,6 @@ export default {
   maxDailyDrawdown: 0.02,
   positionPctPerTrade: 0.2,
 };
+
+
+export default Config;

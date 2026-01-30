@@ -10,6 +10,7 @@ import { isMarketCloseTime, isTradableTime } from './core/timeGuard';
 import { logger } from './utils/logger';
 import { Market } from './core/realTimeMarket';
 import { getBarLength } from './utils';
+import { db, initDB } from './db';
 
 const Koa = require('koa');
 const app = new Koa();
@@ -29,7 +30,7 @@ async function loop() {
         // 每5秒执行一次
         await sleep(1000 * 5);
 
-        // 尾盘平仓
+        // 尾盘平仓, 做好清理工作
         if (isMarketCloseTime(config.closeTimeMinutes)) {
             await closeAllPositions();
             logger.info('[RISK] 📊 尾盘全平');
@@ -43,6 +44,8 @@ async function loop() {
             dailyRisk = null;
             atrManager = null;
             inited = false;
+            // 清空持仓状态
+            await db?.states?.clear();
             continue;
         }
 
@@ -52,12 +55,12 @@ async function loop() {
             dailyRisk = new RiskManager(config.maxDailyDrawdown);
             strategy = new VWAPStrategy(config, dailyRisk);
 
+            // 初始化持仓状态
+            await strategy.init();
             await atrManager.preloadATR();
-            logger.debug(`ATR 预热完成`);
 
             const { netAssets: startEquity } = await getAccountEquity();
-            dailyRisk.initDay(startEquity);
-            logger.debug(`[RISK] 初始化日风险控制，初始净值 ${startEquity}`);
+            await dailyRisk?.initDay(startEquity);
 
             logger.info(`初始化结束`);
         }
@@ -104,19 +107,35 @@ async function init() {
     // ===== 交易日初始化 =====
     logger.info('🚀 VWAP 日内策略初始化');
     initTradeEnv();
+    // ===== 数据库初始化 =====
+    await initDB();
 }
 
-init().then(_ => {
+init().then(async _ => {
     // 初始化交易之前，先清空所有持仓
-    closeAllPositions().then(_ => {
-        // 主交易循环
-        loop();
+    await closeAllPositions();
+    // 主交易循环
+    loop();
 
-        // SERVER START
-        app.listen(PORT, () => {
-            logger.info(`🚀 VWAP 日内策略启动`);
-        });
+    // SERVER START
+    app.listen(PORT, () => {
+        logger.info(`🚀 VWAP 日内策略启动`);
     });
 }).catch((e) =>
     logger.fatal(e.message)
 );
+
+process.on('SIGINT', async () => {
+    logger.info('SIGINT signal received.');
+    process.exit(0);
+});
+
+process.on('uncaughtException', async () => {
+    logger.info('uncaughtException signal received.');
+    process.exit(0);
+});
+
+process.on('unhandledRejection', async () => {
+    logger.info('unhandledRejection signal received.');
+    process.exit(0);
+});

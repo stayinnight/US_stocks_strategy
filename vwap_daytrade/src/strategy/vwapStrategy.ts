@@ -10,6 +10,7 @@ import { Market } from "../core/realTimeMarket";
 import { sleep } from "../utils/sleep";
 import { calcRSI } from "../core/indicators/rsi";
 import { calcVolume } from "../core/indicators/volume";
+import { db } from "../db";
 
 class VWAPStrategy {
     config: StrategyConfig;
@@ -20,6 +21,12 @@ class VWAPStrategy {
         this.config = config;
         this.dailyRisk = dailyRisk;
         this.states = {};
+    }
+
+    // 读取持仓状态
+    async init() {
+        this.states = await db?.states?.getAll() || {};
+        logger.debug(`持仓状态初始化完成，当前持仓 ${JSON.stringify(this.states)}`);
     }
 
     /**
@@ -46,7 +53,6 @@ class VWAPStrategy {
         if (!this.dailyRisk.canTrade()) {
             return null;
         }
-
         const state = this.getState(symbol);
         if (state.position) {
             return null;
@@ -139,8 +145,6 @@ class VWAPStrategy {
                 dir = OrderSide.Sell;
             } else if (count === 1 && score >= 1) {
                 dir = OrderSide.Sell;
-            } else if (count === 0) {
-                dir = OrderSide.Sell;
             }
             logger.info(count, score, dir)
         }
@@ -221,6 +225,8 @@ class VWAPStrategy {
                 Math.max(state.stopPrice, currPrice - state.stopDistance) :
                 Math.min(state.stopPrice, currPrice + state.stopDistance);
         }
+
+        await db?.states?.setSymbolState(symbol, state);
     }
 
     async open(
@@ -266,6 +272,8 @@ class VWAPStrategy {
             vwap + this.config.stopAtrRatio * atr;
         state.stopDistance = Math.abs(state.entryPrice - state.stopPrice);
         state.qty = qty;
+
+        await db?.states?.setSymbolState(symbol, state);
 
         logger.info(`[OPEN] ${symbol} 开仓方向: ${side} VWAP: ${vwap} ATR: ${atr} OPEN: ${currPrice} ${state.toString()}`);
 
