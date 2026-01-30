@@ -114,7 +114,6 @@ async function init() {
 init().then(async _ => {
     // 初始化交易之前，先清空所有持仓
     await closeAllPositions();
-    logger.info('[RISK] 📊 尾盘全平');
     // 主交易循环
     loop();
 
