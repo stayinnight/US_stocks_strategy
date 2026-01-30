@@ -1,36 +1,47 @@
-// import { JSONFilePreset } from 'lowdb/node';
-// import fs from 'fs';
-// import { resolve } from 'path';
-// import { StrategyConfig } from '../interface/config';
+import fs from 'fs';
+import { resolve } from 'path';
+import StateService from './collections/states';
+import { Low } from 'lowdb/lib';
+import SymbolState from '../core/state';
 
-// const DBCollection = {
-//     Account: 'account', // 账户状态
-//     States: 'states', // 持仓状态
-//     Market: 'market', // 市场数据
-//     Config: 'config', // 配置数据
-// }
+enum DBCollection {
+    States = 'states', // 持仓状态
+}
 
-// const DATA_ROOT = './data';
+const DATA_ROOT = './data';
 
-// class DB {
-//     tables: Record<string, any> = {};
+class DB {
+    states: StateService | null = null;
 
-//     constructor() {
-//         this.tables = {};
-//     }
+    constructor() {
+        this.states = null;
+    }
 
-//     connect() {
-//         return Promise.all(Object.values(DBCollection).map(async collection => {
-//             const dbPath = resolve(DATA_ROOT, collection + '.json');
-//             if (!fs.existsSync(dbPath)) {
-//                 fs.mkdirSync(resolve(DATA_ROOT), { recursive: true });
-//                 fs.writeFileSync(dbPath, '{}');
-//             }
-//             const a = await JSONFilePreset<StrategyConfig>(dbPath, {});
-//             this.tables[collection] = a;
-//         }));
-//     }
-// }
+    connect() {
+        return Promise.all(Object.values(DBCollection).map(async collection => {
+            const dbPath = resolve(DATA_ROOT, collection + '.json');
+            if (!fs.existsSync(dbPath)) {
+                fs.mkdirSync(resolve(DATA_ROOT), { recursive: true });
+                fs.writeFileSync(dbPath, '{}');
+            }
+            const { Low } = await import('lowdb')
+            const { JSONFile } = await import('lowdb/node')
+            const adapter = new JSONFile(dbPath);
+            const db = new Low(adapter, {});
 
-// export { DBCollection, DB }
-export {}
+            let Service = null;
+            switch (collection) {
+                case DBCollection.States:
+                    Service = new StateService(db as Low<Record<string, SymbolState>>);
+                    break;
+            }
+            if (!Service) {
+                throw new Error(`[DB] 未实现 ${collection} 服务`);
+            }
+
+            this[collection] = Service;
+        }))
+    }
+}
+
+export { DBCollection, DB }

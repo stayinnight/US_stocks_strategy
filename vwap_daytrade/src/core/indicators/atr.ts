@@ -40,6 +40,7 @@ class ATRManager {
         logger.info(`[ATR] ${symbol} ATR=${atr?.toFixed(2)}`);
       }
     }
+    logger.debug(`ATR 预热完成`);
     return this.atrMap;
   }
 

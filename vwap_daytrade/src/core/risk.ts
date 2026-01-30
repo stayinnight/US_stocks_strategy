@@ -1,3 +1,4 @@
+import { db } from "../db";
 import { logger } from "../utils/logger";
 
 /**
@@ -19,9 +20,10 @@ class RiskManager {
   /**
    * 每日开盘时调用一次
    */
-  initDay(equity: number) {
+  async initDay(equity: number) {
     this.startEquity = equity;
     this.tradingHalted = false;
+    logger.debug(`[RISK] 初始化日风险控制，初始净值 ${equity}`);
   }
 
   /**
