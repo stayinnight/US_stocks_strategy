@@ -28,9 +28,9 @@ const Config = {
   // ========================
   // VWAP 区间参数
   // ========================
-  vwapBandAtrRatio: 0.02,
+  vwapBandAtrRatio: 0.1,
   vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
-  stopAtrRatio: 0.05,
+  stopAtrRatio: 0.1,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
