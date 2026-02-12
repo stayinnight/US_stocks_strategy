@@ -21,22 +21,23 @@ const Config = {
     'COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'HOOD', 'TSM', 'MSTR',
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
     'SMCI', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
-    'SATS', 'LITE', 'WDC', 'RIVN', 'NOW', 'COHR', 'FCX', 'STX'
+    'SATS', 'LITE', 'WDC', 'RIVN', 'NOW', 'COHR', 'FCX', 'STX', 'TQQQ', 'YINN',
+    'TNA', 'TECL', 'SOXL', 'DFEN', 'FAS', 'LABU', 'DPST'
   ].map(s => s + '.US'),
 
   // ========================
   // VWAP 区间参数
   // ========================
-  vwapBandAtrRatio: 0.05,
+  vwapBandAtrRatio: 0.0001,
   vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
-  stopAtrRatio: 0.15,
+  stopAtrRatio: 0.08,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
   // ========================
   // ATR 区间参数
   // ========================
-  atrPeriod: 14,
+  atrPeriod: 7,
 
   // ========================
   // RSI 区间参数
@@ -56,7 +57,7 @@ const Config = {
   // ========================
   // 时间限制（美股时间，分钟）
   // ========================
-  noTradeAfterOpenMinutes: 5, // 开盘前5分钟不交易
+  noTradeAfterOpenMinutes: 10, // 开盘前5分钟不交易
   noTradeBeforeCloseMinutes: 20, // 收盘前20分钟不交易
   closeTimeMinutes: 10, // 尾盘平仓时间
 
