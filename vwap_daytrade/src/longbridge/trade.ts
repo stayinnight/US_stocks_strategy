@@ -2,6 +2,7 @@ import { Decimal, OrderSide, OrderType, TimeInForceType } from 'longport';
 import { getTradeCtx } from './client';
 import { logger } from '../utils/logger';
 import config from '../config/strategy.config'
+import { db } from '../db';
 
 /**
  * 下单
@@ -66,6 +67,9 @@ async function closeAllPositions() {
       });
     }
   }
+
+  // 清空持仓状态
+  await db?.states?.clear();
 }
 
 

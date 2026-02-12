@@ -1,4 +1,5 @@
 import { Candlestick, OrderSide, OrderStatus, SecurityQuote } from "longport";
+import { calcTopAndLow } from "../utils/max";
 import { RiskManager } from "../core/risk";
 import SymbolState from "../core/state";
 import { StrategyConfig } from "../interface/config";
@@ -26,7 +27,6 @@ class VWAPStrategy {
     // 读取持仓状态
     async init() {
         this.states = await db?.states?.getAll() || {};
-        logger.debug(`持仓状态初始化完成，当前持仓 ${JSON.stringify(this.states)}`);
     }
 
     /**
@@ -39,16 +39,11 @@ class VWAPStrategy {
      */
     canOpen(
         symbol: string,
-        preBar: Candlestick,
+        preFiveMinutesBars: Candlestick[],
         quote: SecurityQuote,
         vwap: number,
         atr: number,
-        volumes: {
-            recentVolume: number,
-            pastVolume: number,
-        } | null,
         rsi: number | null,
-        vwapSlope: number | null,
     ) {
         if (!this.dailyRisk.canTrade()) {
             return null;
@@ -60,8 +55,9 @@ class VWAPStrategy {
 
         let dir = null;
         const currPrice = quote.lastDone.toNumber();
-        const preHigh = preBar.high.toNumber();
-        const preLow = preBar.low.toNumber();
+        const { top, low } = calcTopAndLow(preFiveMinutesBars);
+        const preHigh = top.high.toNumber();
+        const preLow = low.low.toNumber();
 
         /**
          * 开仓条件：
@@ -71,9 +67,8 @@ class VWAPStrategy {
          * 4. 如果judges长度为3，则判断其中的指标有两个符合要求则开仓
          */
         const judges = {
-            volumes,
             rsi,
-            vwapSlope,
+            // vwapSlope,
         };
         let score = 0;
         const count = Object.values(judges).filter(Boolean).length;
@@ -83,32 +78,11 @@ class VWAPStrategy {
             currPrice > vwap + this.config.vwapBandAtrRatio * atr &&
             preHigh < vwap + this.config.vwapBandAtrRatio * atr
         ) {
-            // judge长度为0时，直接开仓
-            // if (count === 0) {
-            //     dir = OrderSide.Buy;
-            // }
-
-            // count不为0时，判断指标是否符合要求
-            if (
-                judges.volumes &&
-                judges.volumes.recentVolume > judges.volumes.pastVolume * this.config.volumeEntryThreshold
-            ) {
-                logger.info(symbol, 'volumesPass', judges.volumes)
-                score++;
-            }
             if (judges.rsi && judges.rsi > this.config.rsiBuyThreshold) {
                 logger.info(symbol, 'rsiPass', judges.rsi)
                 score++;
             }
-            if (judges.vwapSlope && judges.vwapSlope > 0) {
-                logger.info(symbol, 'vwapSlopePass', judges.vwapSlope)
-                score++;
-            }
-            if (count === 3 && score >= 2) {
-                dir = OrderSide.Buy;
-            } else if (count === 2 && score >= 1) {
-                dir = OrderSide.Buy;
-            } else if (count === 1 && score >= 1) {
+            if (count === 1 && score === 1) {
                 dir = OrderSide.Buy;
             }
             logger.info(count, score, dir)
@@ -117,33 +91,11 @@ class VWAPStrategy {
             currPrice < vwap - this.config.vwapBandAtrRatio * atr &&
             preLow > vwap - this.config.vwapBandAtrRatio * atr
         ) {
-            // judge长度为0时，直接开仓
-            // if (count === 0) {
-            //     dir = OrderSide.Sell;
-            // }
-
-            // count不为0时，判断指标是否符合要求
-            if (judges.volumes && judges.volumes.recentVolume > judges.volumes.pastVolume * this.config.volumeEntryThreshold) {
-                logger.info(symbol, 'volumesPass', judges.volumes)
-                score++;
-            }
             if (judges.rsi && judges.rsi < this.config.rsiSellThreshold) {
                 logger.info(symbol, 'rsiPass', judges.rsi)
                 score++;
             }
-            if (judges.vwapSlope && judges.vwapSlope < 0) { 
-                logger.info(symbol, 'vwapSlopepass', judges.vwapSlope)
-                score++;
-            }
-            if (judges.vwapSlope && judges.vwapSlope < 0) {
-                logger.info(symbol, 'vwapSlopePass', judges.vwapSlope)
-                score++;
-            }
-            if (count === 3 && score >= 2) {
-                dir = OrderSide.Sell;
-            } else if (count === 2 && score >= 1) {
-                dir = OrderSide.Sell;
-            } else if (count === 1 && score >= 1) {
+            if (count === 1 && score === 1) {
                 dir = OrderSide.Sell;
             }
             logger.info(count, score, dir)
@@ -167,24 +119,24 @@ class VWAPStrategy {
         atr: number,
         market: Market
     ) {
-        const postQuotes = market.getPostQuote(symbol);
+        // const postQuotes = market.getPostQuote(symbol);
         const quote = market.getQuote(symbol);
-        const preBar = bars[bars.length - 2]; // 前一个k线
+        const preFiveMinutesBars = bars.slice(bars.length - 6, bars.length - 1); // 前一个5分钟k线
 
         const vwap = calcVWAP(quote);
         const rsi = calcRSI(bars, this.config.rsiPeriod);
-        const vwapSlope = calcVWAPSlope(postQuotes, this.config.vwapSmoothPeriod);
-        const volumes = calcVolume(bars);
+        // const vwapSlope = calcVWAPSlope(postQuotes, this.config.vwapSmoothPeriod);
+        // const volumes = calcVolume(bars);
 
         const dir = this.canOpen(
             symbol,
-            preBar,
+            preFiveMinutesBars,
             quote,
             vwap,
             atr,
-            volumes,
+            // volumes,
             rsi,
-            vwapSlope,
+            // vwapSlope,
         );
 
         if (dir) {
@@ -211,14 +163,14 @@ class VWAPStrategy {
             state.stopPrice &&
             dir * (currPrice - state.stopPrice) <= 0
         ) {
-            logger.info(`[移动止损/止盈: before] ${symbol} PRICE ${currPrice} VWAP ${vwap} ATR ${atr} ${state.toString()}`);
+            logger.info(`[移动止损/止盈: before] ${symbol} PRICE ${currPrice} VWAP ${vwap} ATR ${atr} ${JSON.stringify(state)}`);
             await placeOrder({
                 symbol,
                 side: state.position === OrderSide.Buy ? OrderSide.Sell : OrderSide.Buy,
                 qty: state.qty,
             });
 
-            state.reset();
+            Object.assign(state, new SymbolState());
         } else if (state.stopPrice && state.stopDistance) {
             // 如果当前价格未触发止损/止盈，更新止损价格
             state.stopPrice = dir === 1 ?
