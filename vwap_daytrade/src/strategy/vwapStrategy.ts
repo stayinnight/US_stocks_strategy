@@ -3,14 +3,13 @@ import { calcTopAndLow } from "../utils/max";
 import { RiskManager } from "../core/risk";
 import SymbolState from "../core/state";
 import { StrategyConfig } from "../interface/config";
-import { calcVWAP, calcVWAPSlope } from "../core/indicators/vwap";
+import { calcVWAP } from "../core/indicators/vwap";
 import { placeOrder, getAccountEquity, getOrderDetail } from "../longbridge/trade";
 import { calcPositionSize } from "../core/position";
 import { logger } from "../utils/logger";
 import { Market } from "../core/realTimeMarket";
 import { sleep } from "../utils/sleep";
 import { calcRSI } from "../core/indicators/rsi";
-import { calcVolume } from "../core/indicators/volume";
 import { db } from "../db";
 
 class VWAPStrategy {
@@ -39,8 +38,8 @@ class VWAPStrategy {
      */
     canOpen(
         symbol: string,
-        preFiveMinutesBars: Candlestick[],
-        quote: SecurityQuote,
+        preSixMinutesBars: Candlestick[],
+        // quote: SecurityQuote,
         vwap: number,
         atr: number,
         rsi: number | null,
@@ -54,32 +53,29 @@ class VWAPStrategy {
         };
 
         let dir = null;
-        const currPrice = quote.lastDone.toNumber();
-        const { top, low } = calcTopAndLow(preFiveMinutesBars);
-        const preHigh = top.high.toNumber();
-        const preLow = low.low.toNumber();
+        // 计算5分钟内的最低值和最高值
+        const {
+            low: lastFiveMinuteslow,
+            top: lastFiveMinutesHigh,
+        } = calcTopAndLow(preSixMinutesBars.slice(1, 6));
+        // 计算5分钟之前的第一根k的最高值
+        const { 
+            top: sixMinuteHigh,
+            low: sixMinuteLow,
+         } = calcTopAndLow(preSixMinutesBars.slice(0, 1));
 
-        /**
-         * 开仓条件：
-         * 1. 如果judges长度为0，则不考虑score，直接开仓
-         * 2. 如果judges长度为1，则判断其中的指标全部符合要求则开仓
-         * 3. 如果judges长度为2，则判断其中的指标有一个符合要求则开仓
-         * 4. 如果judges长度为3，则判断其中的指标有两个符合要求则开仓
-         */
         const judges = {
             rsi,
-            // vwapSlope,
         };
         let score = 0;
         const count = Object.values(judges).filter(Boolean).length;
 
         if (
             // 价格突破的判断
-            currPrice > vwap + this.config.vwapBandAtrRatio * atr &&
-            preHigh < vwap + this.config.vwapBandAtrRatio * atr
+            lastFiveMinuteslow >= vwap + this.config.vwapBandAtrRatio * atr &&
+            sixMinuteLow < vwap + this.config.vwapBandAtrRatio * atr
         ) {
             if (judges.rsi && judges.rsi > this.config.rsiBuyThreshold) {
-                logger.info(symbol, 'rsiPass', judges.rsi)
                 score++;
             }
             if (count === 1 && score === 1) {
@@ -88,11 +84,10 @@ class VWAPStrategy {
             logger.info(count, score, dir)
         } else if (
             // 价格突破的判断
-            currPrice < vwap - this.config.vwapBandAtrRatio * atr &&
-            preLow > vwap - this.config.vwapBandAtrRatio * atr
+            lastFiveMinutesHigh <= vwap - this.config.vwapBandAtrRatio * atr &&
+            sixMinuteHigh > vwap - this.config.vwapBandAtrRatio * atr
         ) {
             if (judges.rsi && judges.rsi < this.config.rsiSellThreshold) {
-                logger.info(symbol, 'rsiPass', judges.rsi)
                 score++;
             }
             if (count === 1 && score === 1) {
@@ -121,22 +116,17 @@ class VWAPStrategy {
     ) {
         // const postQuotes = market.getPostQuote(symbol);
         const quote = market.getQuote(symbol);
-        const preFiveMinutesBars = bars.slice(bars.length - 6, bars.length - 1); // 前一个5分钟k线
+        const preSixMinutesBars = bars.slice(bars.length - 7, bars.length - 1); // 前六分钟k线  
 
         const vwap = calcVWAP(quote);
-        const rsi = calcRSI(bars, this.config.rsiPeriod);
-        // const vwapSlope = calcVWAPSlope(postQuotes, this.config.vwapSmoothPeriod);
-        // const volumes = calcVolume(bars);
+        const rsi = calcRSI(preSixMinutesBars, this.config.rsiPeriod);
 
         const dir = this.canOpen(
             symbol,
-            preFiveMinutesBars,
-            quote,
+            preSixMinutesBars,
             vwap,
             atr,
-            // volumes,
             rsi,
-            // vwapSlope,
         );
 
         if (dir) {

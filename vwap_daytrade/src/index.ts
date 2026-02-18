@@ -6,7 +6,7 @@ import { sleep } from './utils/sleep';
 import { initTradeEnv } from './core/env';
 import { RiskManager } from './core/risk';
 import { ATRManager } from './core/indicators/atr';
-import { isMarketCloseTime, isTradableTime } from './core/timeGuard';
+import { timeGuard } from './core/timeGuard';
 import { logger } from './utils/logger';
 import { Market } from './core/realTimeMarket';
 // import { getBarLength } from './utils';
@@ -50,27 +50,8 @@ async function loop() {
 
         await sleep(1500);
 
-        // 尾盘平仓, 做好清理工作
-        if (isMarketCloseTime(config.closeTimeMinutes)) {
-            await closeAllPositions();
-            // 清空持仓状态
-            await db?.states?.clear();
-            logger.info('[RISK] 📊 尾盘全平');
-            continue;
-        }
-
-        // 非交易时间，跳过
-        if (!isTradableTime(config.noTradeAfterOpenMinutes, config.noTradeBeforeCloseMinutes)) {
-            // 非交易时间清空状态
-            strategy = null;
-            dailyRisk = null;
-            atrManager = null;
-            inited = false;
-            continue;
-        }
-
-        // ===== 交易日初始化 =====
-        const initContext = async () => {
+        // ===== 交易日初始化, 每天只执行一次 =====
+        if (!inited) {
             atrManager = new ATRManager();
             dailyRisk = new RiskManager(config.maxDailyDrawdown);
             strategy = new VWAPStrategy(config, dailyRisk);
@@ -84,11 +65,30 @@ async function loop() {
             await dailyRisk?.initDay(startEquity);
 
             logger.info(`初始化结束`);
+            inited = true;
+        }
+
+        // 尾盘平仓, 做好清理工作
+        if (timeGuard.isForceCloseTime()) {
+            await closeAllPositions();
+            // 清空持仓状态
+            await db?.states?.clear();
+            logger.info('[RISK] 📊 尾盘全平');
+            continue;
+        }
+
+        // 非交易时间，跳过
+        if (!timeGuard.isInTradeTime()) {
+            // 非交易时间清空状态
+            strategy = null;
+            dailyRisk = null;
+            atrManager = null;
+            inited = false;
+            continue;
         }
 
         // ===== 正常策略执行 =====
         const trade = async (symbols: string[], market: Market) => {
-
             const tasks = symbols.map(async symbol => {
                 const bars = await getMinuteBars(symbol, defaultBarLength);
                 return await strategy?.onBar(
@@ -102,11 +102,6 @@ async function loop() {
         }
 
         try {
-            // init每天只执行一次
-            if (!inited) {
-                await initContext();
-                inited = true;
-            }
             const { netAssets: equity } = await getAccountEquity();
             // ===== 最高优先级：账户回撤检查 =====
             const shouldStop = dailyRisk!.check(equity);
@@ -131,6 +126,7 @@ async function init() {
     // ===== 交易日初始化 =====
     logger.info('🚀 VWAP 日内策略初始化');
     initTradeEnv();
+    await timeGuard.initTradeSession();
     // ===== 数据库初始化 =====
     await initDB();
 }

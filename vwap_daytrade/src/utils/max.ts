@@ -1,12 +1,10 @@
 import { Candlestick } from "longport";
 
-
 export const calcTopAndLow = (bars: Candlestick[]) => {
-    const top = bars.reduce((prev, curr) => {
-        return prev.high.toNumber() > curr.high.toNumber() ? prev : curr;
-    });
-    const low = bars.reduce((prev, curr) => {
-        return prev.low.toNumber() < curr.low.toNumber() ? prev : curr;
-    });
-    return { top, low };
+    const opens = bars.map((bar) => bar.open.toNumber());
+    const closes = bars.map((bar) => bar.close.toNumber());
+    return {
+        top: Math.max(...opens, ...closes),
+        low: Math.min(...opens, ...closes)
+    };
 }
