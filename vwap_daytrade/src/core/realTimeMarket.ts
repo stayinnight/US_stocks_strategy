@@ -1,7 +1,7 @@
 import strategyConfig from "../config/strategy.config";
 import { getQuote } from "../longbridge/market";
 import { SecurityQuote } from "longport";
-import { isTradeTime } from "./timeGuard";
+import { timeGuard } from "./timeGuard";
 import { logger } from "../utils/logger";
 
 /** 
@@ -30,7 +30,7 @@ class Market {
         this.updateQuote();
         // 1 min 更新一次行情数据
         setInterval(() => {
-            if (isTradeTime()) {
+            if (timeGuard.isInStrategyTradeTime()) {
                 void this.updateQuote();
             }
         }, this.UPDATE_INTERVAL);

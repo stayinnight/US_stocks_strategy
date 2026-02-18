@@ -53,10 +53,19 @@ async function getQuote(symbols: string[]) {
   return await c.quote(symbols);
 }
 
+/**
+ * 获取当日交易时段
+ */
+async function getTradeSessions() {
+  const c = await getQuoteCtx();
+  return await c.tradingSession();
+}
+
 export {
   getMinuteBars,
   getQuote,
   getFiveMinuteBars,
   getDailyBars,
+  getTradeSessions
 };
 
