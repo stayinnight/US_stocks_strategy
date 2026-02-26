@@ -49,7 +49,6 @@ async function loop() {
     while (true) {
 
         await sleep(1500);
-
         // ===== 交易日初始化, 每天只执行一次 =====
         if (!inited) {
             atrManager = new ATRManager();

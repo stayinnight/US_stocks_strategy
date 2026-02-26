@@ -47,33 +47,19 @@ class TimeGuard {
     session: DailyTradeSession = this.session,
     noTradeAfterOpenMinutes: number = config.noTradeAfterOpenMinutes,
     noTradeBeforeCloseMinutes: number = config.noTradeBeforeCloseMinutes,
-    now: Date | number = Date.now(),
-    exchangeTZ = 'America/New_York'
   ): boolean {
-    const { beginTime, endTime } = session
+    return true;
+    // 当前时间（UTC）
+    const nowUtc = dayjs().utc()
+    const exchangeNow = nowUtc.tz('America/New_York')
 
-    const nowUtc = dayjs(now).utc()
-
-    // 以交易所“今天”为准
-    const exchangeNow = nowUtc.tz(exchangeTZ)
-    const tradeDate = exchangeNow.format('YYYY-MM-DD')
-
-    // 构造交易所本地的开盘 / 收盘时间
-    const open = dayjs.tz(
-      `${tradeDate} ${beginTime}`,
-      'YYYY-MM-DD HH:mm:ss',
-      exchangeTZ
-    )
-
-    const close = dayjs.tz(
-      `${tradeDate} ${endTime}`,
-      'YYYY-MM-DD HH:mm:ss',
-      exchangeTZ
-    )
+    const open = this.buildExchangeTime(exchangeNow, session.beginTime)
+    const close = this.buildExchangeTime(exchangeNow, session.endTime)
 
     // 策略允许的交易窗口
     const strategyStart = open.add(noTradeAfterOpenMinutes, 'minute')
     const strategyEnd = close.subtract(noTradeBeforeCloseMinutes, 'minute')
+    console.log(strategyStart, strategyEnd, '当前时间（UTC）', nowUtc)
 
     // 防御：配置错误直接返回 false
     if (strategyStart.isAfter(strategyEnd)) {
@@ -95,6 +81,7 @@ class TimeGuard {
     now: Date | number = Date.now(),
     exchangeTZ = 'America/New_York'
   ): boolean {
+    return false;
     const { endTime } = session
 
     const nowUtc = dayjs(now).utc()
@@ -126,33 +113,31 @@ class TimeGuard {
 
   isInTradeTime(
     session: DailyTradeSession = this.session,
-    now: Date | number = Date.now(),
-    exchangeTZ = 'America/New_York'
   ): boolean {
-    const { beginTime, endTime } = session
-
+    return true;
     // 当前时间（UTC）
-    const nowUtc = dayjs(now).utc()
+    const nowUtc = dayjs().utc()
+    const exchangeNow = nowUtc.tz('America/New_York')
 
-    // 用“交易所今天的日期”
-    const exchangeNow = nowUtc.tz(exchangeTZ)
-    const tradeDate = exchangeNow.format('YYYY-MM-DD')
-
-    // 构造交易开始 / 结束时间（交易所本地时间）
-    const begin = dayjs.tz(
-      `${tradeDate} ${beginTime}`,
-      'YYYY-MM-DD HH:mm:ss',
-      exchangeTZ
-    )
-
-    const end = dayjs.tz(
-      `${tradeDate} ${endTime}`,
-      'YYYY-MM-DD HH:mm:ss',
-      exchangeTZ
-    )
+    const begin = this.buildExchangeTime(exchangeNow, session.beginTime)
+    const end = this.buildExchangeTime(exchangeNow, session.endTime)
 
     // 转成 UTC 再比较（最安全）
     return nowUtc.isAfter(begin.utc()) && nowUtc.isBefore(end.utc())
+  }
+
+  buildExchangeTime(
+    exchangeNow: dayjs.Dayjs,
+    time: string
+  ) {
+    const [h, m, s] = time.split(':').map(Number)
+
+    return exchangeNow
+      .startOf('day')
+      .hour(h)
+      .minute(m)
+      .second(s ?? 0)
+      .millisecond(0)
   }
 }
 
