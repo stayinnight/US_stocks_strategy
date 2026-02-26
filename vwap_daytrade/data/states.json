@@ -1,1 +1,52 @@
-{}
+{
+  "CIEN.US": {
+    "buyTraded": false,
+    "sellTraded": true,
+    "position": 2,
+    "entryPrice": 333.19,
+    "qty": 57,
+    "stopDistance": 6.082194396211264,
+    "stopPrice": 337.65219439621126,
+    "halfClosed": false
+  },
+  "LLY.US": {
+    "buyTraded": false,
+    "sellTraded": true,
+    "position": 2,
+    "entryPrice": 1010.34,
+    "qty": 18,
+    "stopDistance": 8.072607287741675,
+    "stopPrice": 1016.6626072877417,
+    "halfClosed": false
+  },
+  "DPST.US": {
+    "buyTraded": false,
+    "sellTraded": true,
+    "position": 2,
+    "entryPrice": 122.99,
+    "qty": 155,
+    "stopDistance": 1.7807317133890734,
+    "stopPrice": 123.82073171338908,
+    "halfClosed": false
+  },
+  "MP.US": {
+    "buyTraded": true,
+    "sellTraded": false,
+    "position": 1,
+    "entryPrice": 60.05,
+    "qty": 318,
+    "stopDistance": 1.1589453515059205,
+    "stopPrice": 58.94105464849408,
+    "halfClosed": false
+  },
+  "LITE.US": {
+    "buyTraded": false,
+    "sellTraded": true,
+    "position": 2,
+    "entryPrice": 680.515,
+    "qty": 28,
+    "stopDistance": 10.940771713699974,
+    "stopPrice": 689.9907717136999,
+    "halfClosed": false
+  }
+}

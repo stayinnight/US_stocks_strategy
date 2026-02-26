@@ -117,7 +117,6 @@ class VWAPStrategy {
         // const postQuotes = market.getPostQuote(symbol);
         const quote = market.getQuote(symbol);
         const preSixMinutesBars = bars.slice(bars.length - 7, bars.length - 1); // 前六分钟k线  
-        console.log(preSixMinutesBars, 'preSixMinutesBars')
         const vwap = calcVWAP(quote);
         const rsi = calcRSI(preSixMinutesBars, this.config.rsiPeriod);
 

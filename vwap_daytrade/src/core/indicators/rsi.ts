@@ -34,7 +34,7 @@ function calcRSI(bars: Candlestick[], period = strategyConfig.rsiPeriod): number
 
   const rs = avgGain / avgLoss;
   const rsi = 100 - 100 / (1 + rs);
-  console.log(rsi, 'rsi')
+  
   return Number(rsi.toFixed(2));
 }
 

@@ -48,7 +48,6 @@ class TimeGuard {
     noTradeAfterOpenMinutes: number = config.noTradeAfterOpenMinutes,
     noTradeBeforeCloseMinutes: number = config.noTradeBeforeCloseMinutes,
   ): boolean {
-    return true;
     // 当前时间（UTC）
     const nowUtc = dayjs().utc()
     const exchangeNow = nowUtc.tz('America/New_York')
@@ -59,7 +58,6 @@ class TimeGuard {
     // 策略允许的交易窗口
     const strategyStart = open.add(noTradeAfterOpenMinutes, 'minute')
     const strategyEnd = close.subtract(noTradeBeforeCloseMinutes, 'minute')
-    console.log(strategyStart, strategyEnd, '当前时间（UTC）', nowUtc)
 
     // 防御：配置错误直接返回 false
     if (strategyStart.isAfter(strategyEnd)) {
@@ -78,26 +76,14 @@ class TimeGuard {
   isForceCloseTime(
     session: DailyTradeSession = this.session,
     closeMinutes: number = config.closeTimeMinutes,
-    now: Date | number = Date.now(),
-    exchangeTZ = 'America/New_York'
   ): boolean {
-    return false;
-    const { endTime } = session
+    // 当前时间（UTC）
+    const nowUtc = dayjs().utc()
+    const exchangeNow = nowUtc.tz('America/New_York')
 
-    const nowUtc = dayjs(now).utc()
+    const end = this.buildExchangeTime(exchangeNow, session.endTime)
 
-    // 以交易所当天为准
-    const exchangeNow = nowUtc.tz(exchangeTZ)
-    const tradeDate = exchangeNow.format('YYYY-MM-DD')
-
-    // 构造收盘时间（交易所本地）
-    const close = dayjs.tz(
-      `${tradeDate} ${endTime}`,
-      'YYYY-MM-DD HH:mm:ss',
-      exchangeTZ
-    )
-
-    const forceCloseStart = close.subtract(closeMinutes, 'minute')
+    const forceCloseStart = end.subtract(closeMinutes, 'minute')
 
     // 防御：非法配置
     if (closeMinutes <= 0) {
@@ -106,7 +92,7 @@ class TimeGuard {
 
     return (
       nowUtc.isAfter(forceCloseStart.utc()) &&
-      nowUtc.isBefore(close.utc())
+      nowUtc.isBefore(end.utc())
     )
   }
 
@@ -114,7 +100,6 @@ class TimeGuard {
   isInTradeTime(
     session: DailyTradeSession = this.session,
   ): boolean {
-    return true;
     // 当前时间（UTC）
     const nowUtc = dayjs().utc()
     const exchangeNow = nowUtc.tz('America/New_York')
