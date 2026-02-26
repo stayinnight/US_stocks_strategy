@@ -30,7 +30,7 @@ const Config = {
   // ========================
   vwapBandAtrRatio: 0.1,
   vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
-  stopAtrRatio: 0.1,
+  stopAtrRatio: 0.06,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
@@ -42,7 +42,7 @@ const Config = {
   // ========================
   // RSI 区间参数
   // ========================
-  rsiPeriod: 6,
+  rsiPeriod: 5,
   rsiBuyThreshold: 55,
   rsiSellThreshold: 45,
 
