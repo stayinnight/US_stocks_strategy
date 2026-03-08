@@ -7,6 +7,18 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import config from '../config/strategy.config';
+// import Holidays from 'date-holidays'
+
+// const hd = new Holidays('NY')
+
+// const today = new Date()
+
+// const isHoliday = hd.isHoliday(today)
+// console.log(isHoliday, 'isHoliday')
+
+// if (isHoliday) {
+//   console.log('美股休市')
+// }
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -34,6 +46,7 @@ class TimeGuard {
     if (!inTradaySession) {
       throw new Error('intraday session not found');
     }
+    console.log(inTradaySession.toJSON(), 'inTradaySession')
     this.session.beginTime = inTradaySession.toJSON().beginTime;
     this.session.endTime = inTradaySession.toJSON().endTime;
   }
