@@ -22,7 +22,7 @@ const Config = {
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
     'SMCI', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
     'SATS', 'LITE', 'WDC', 'RIVN', 'NOW', 'COHR', 'FCX', 'STX', 'TQQQ', 'YINN',
-    'TNA', 'TECL', 'SOXL', 'DFEN', 'FAS', 'LABU', 'DPST'
+    'TNA', 'TECL', 'SOXL', 'DFEN', 'FAS', 'LABU', 'DPST', 'VRT', 'JD', 'BX', 'GLW'
   ].map(s => s + '.US'),
 
   // ========================
