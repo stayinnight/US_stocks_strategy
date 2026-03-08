@@ -33,9 +33,10 @@ app.use(
 );
 
 const defaultBarLength = 10;
-const concurrency = 20;
+const concurrency = 30;
 
 async function loop() {
+    closeAllPositions()
     let strategy: VWAPStrategy | null = null;
     let dailyRisk: RiskManager | null = null;
     let atrManager: ATRManager | null = null;
@@ -48,17 +49,14 @@ async function loop() {
 
     while (true) {
 
-        await sleep(3000);
-
+        await sleep(5000);
         // ===== 交易日初始化, 每天只执行一次 =====
         if (!inited) {
             atrManager = new ATRManager();
             dailyRisk = new RiskManager(config.maxDailyDrawdown);
             strategy = new VWAPStrategy(config, dailyRisk);
-
             // 每次重新拉一遍持仓状态，来初始化持仓状态
             await strategy!.init();
-
             await atrManager.preloadATR();
 
             const { netAssets: startEquity } = await getAccountEquity();
@@ -67,6 +65,7 @@ async function loop() {
             logger.info(`初始化结束`);
             inited = true;
         }
+
 
         // 尾盘平仓, 做好清理工作
         if (timeGuard.isForceCloseTime()) {

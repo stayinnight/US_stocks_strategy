@@ -59,11 +59,11 @@ class VWAPStrategy {
             top: lastFiveMinutesHigh,
         } = calcTopAndLow(preSixMinutesBars.slice(1, 6));
         // 计算5分钟之前的第一根k的最高值
-        const { 
+        const {
             top: sixMinuteHigh,
             low: sixMinuteLow,
-         } = calcTopAndLow(preSixMinutesBars.slice(0, 1));
-
+        } = calcTopAndLow(preSixMinutesBars.slice(0, 1));
+        
         const judges = {
             rsi,
         };
@@ -75,25 +75,25 @@ class VWAPStrategy {
             lastFiveMinuteslow >= vwap + this.config.vwapBandAtrRatio * atr &&
             sixMinuteLow < vwap + this.config.vwapBandAtrRatio * atr
         ) {
-            if (judges.rsi && judges.rsi > this.config.rsiBuyThreshold) {
+            if (judges.rsi && judges.rsi >= this.config.rsiBuyThreshold) {
                 score++;
             }
             if (count === 1 && score === 1) {
                 dir = OrderSide.Buy;
             }
-            logger.info(count, score, dir)
+            logger.info(count, score, dir, rsi)
         } else if (
             // 价格突破的判断
             lastFiveMinutesHigh <= vwap - this.config.vwapBandAtrRatio * atr &&
             sixMinuteHigh > vwap - this.config.vwapBandAtrRatio * atr
         ) {
-            if (judges.rsi && judges.rsi < this.config.rsiSellThreshold) {
+            if (judges.rsi && judges.rsi <= this.config.rsiSellThreshold) {
                 score++;
             }
             if (count === 1 && score === 1) {
                 dir = OrderSide.Sell;
             }
-            logger.info(count, score, dir)
+            logger.info(count, score, dir, rsi)
         }
 
         if (!dir) return null;
@@ -209,8 +209,8 @@ class VWAPStrategy {
         state.position = side;
         state.entryPrice = currPrice;
         state.stopPrice = side === OrderSide.Buy ?
-            vwap - this.config.stopAtrRatio * atr :
-            vwap + this.config.stopAtrRatio * atr;
+            currPrice - this.config.stopAtrRatio * atr :
+            currPrice + this.config.stopAtrRatio * atr;
         state.stopDistance = Math.abs(state.entryPrice - state.stopPrice);
         state.qty = qty;
 

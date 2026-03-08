@@ -40,6 +40,7 @@ class Market {
         logger.info('🚀 更新行情数据');
         const symbols = strategyConfig.symbols;
         const quotes = await getQuote(symbols);
+
         for (const quote of quotes) {
             const newQuote = [quote, ...this.postQuotes[quote.symbol]];
             if (newQuote.length > this.QUOTE_LENGTH) {
