@@ -36,7 +36,6 @@ const defaultBarLength = 10;
 const concurrency = 30;
 
 async function loop() {
-    closeAllPositions()
     let strategy: VWAPStrategy | null = null;
     let dailyRisk: RiskManager | null = null;
     let atrManager: ATRManager | null = null;
