@@ -10,6 +10,7 @@ class SymbolState {
   stopDistance: number | null; // 止损距离
   stopPrice: number | null;
   halfClosed: boolean;
+  profitPrice: number | null; // 盈利价格
 
   constructor(buyTraded: boolean = false, sellTraded: boolean = false) {
     this.buyTraded = buyTraded;
@@ -22,6 +23,7 @@ class SymbolState {
     this.stopDistance = null; 
     this.stopPrice = null;
     this.halfClosed = false;
+    this.profitPrice = null;
   }
 
   reset() {
@@ -38,7 +40,8 @@ class SymbolState {
         qty: this.qty,
         stopPrice: this.stopPrice,
         halfClosed: this.halfClosed,
-        stopDistance: this.stopDistance
+        stopDistance: this.stopDistance,
+        profitPrice: this.profitPrice,
     })
   }
 }
