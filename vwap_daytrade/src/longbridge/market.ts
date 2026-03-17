@@ -1,4 +1,4 @@
-import { Period, AdjustType, TradeSessions } from 'longport';
+import { Period, AdjustType, TradeSessions, Market, NaiveDate } from 'longport';
 import { getQuoteCtx } from './client';
 
 /**
@@ -61,11 +61,19 @@ async function getTradeSessions() {
   return await c.tradingSession();
 }
 
+/**
+ * 获取交易日历（含半日交易日）
+ */
+async function getTradingDays(market: Market, begin: NaiveDate, end: NaiveDate) {
+  const c = await getQuoteCtx();
+  return await c.tradingDays(market, begin, end);
+}
+
 export {
   getMinuteBars,
   getQuote,
   getFiveMinuteBars,
   getDailyBars,
-  getTradeSessions
+  getTradeSessions,
+  getTradingDays
 };
-

@@ -20,7 +20,14 @@ class Market {
     private QUOTE_LENGTH = 60; // 1 min 一个实时行情    
 
     constructor() {
-        strategyConfig.symbols.forEach(symbol => {
+        // 需要缓存历史 quote 的标的列表：交易标的 +（可选）指数标的
+        const watchSymbols = new Set<string>(strategyConfig.symbols);
+        const indexSymbol = strategyConfig.indexTrendFilter?.indexSymbol;
+        if (strategyConfig.indexTrendFilter?.enabled && indexSymbol) {
+            watchSymbols.add(indexSymbol);
+        }
+
+        watchSymbols.forEach(symbol => {
             this.postQuotes[symbol] = [];
         });
     }
@@ -30,7 +37,7 @@ class Market {
         this.updateQuote();
         // 1 min 更新一次行情数据
         setInterval(() => {
-            if (timeGuard.isInStrategyTradeTime()) {
+            if (timeGuard.isInTradeTime()) {
                 void this.updateQuote();
             }
         }, this.UPDATE_INTERVAL);
@@ -38,8 +45,12 @@ class Market {
 
     async updateQuote() {
         logger.info('🚀 更新行情数据');
-        const symbols = strategyConfig.symbols;
-        const quotes = await getQuote(symbols);
+        const symbolsSet = new Set<string>(strategyConfig.symbols);
+        const indexSymbol = strategyConfig.indexTrendFilter?.indexSymbol;
+        if (strategyConfig.indexTrendFilter?.enabled && indexSymbol) {
+            symbolsSet.add(indexSymbol);
+        }
+        const quotes = await getQuote([...symbolsSet]);
 
         for (const quote of quotes) {
             const newQuote = [quote, ...this.postQuotes[quote.symbol]];

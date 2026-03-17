@@ -32,7 +32,11 @@ app.use(
     })
 );
 
-const defaultBarLength = 10;
+// 需要多取一些 1min K：最后一根可能未收盘会被丢弃；成交量窗口需要 break+post 的历史。
+const defaultBarLength = Math.max(
+    10,
+    config.breakVolumePeriod + config.postVolumePeriod + 2
+);
 const concurrency = 30;
 
 async function loop() {
@@ -43,28 +47,15 @@ async function loop() {
 
     // 异步行情更新
     const market = new Market();
-    market.start();
+    // market.start();
     const picker = createBatchPicker(config.symbols, concurrency);
 
     while (true) {
 
         await sleep(5000);
-        // ===== 交易日初始化, 每天只执行一次 =====
-        if (!inited) {
-            atrManager = new ATRManager();
-            dailyRisk = new RiskManager(config.maxDailyDrawdown);
-            strategy = new VWAPStrategy(config, dailyRisk);
-            // 每次重新拉一遍持仓状态，来初始化持仓状态
-            await strategy!.init();
-            await atrManager.preloadATR();
 
-            const { netAssets: startEquity } = await getAccountEquity();
-            await dailyRisk?.initDay(startEquity);
-
-            logger.info(`初始化结束`);
-            inited = true;
-        }
-
+        // 进程跨天运行时，定期刷新“是否交易日”（美东日期）
+        await timeGuard.refreshTradingDayIfNeeded();
 
         // 尾盘平仓, 做好清理工作
         if (timeGuard.isForceCloseTime()) {
@@ -76,7 +67,7 @@ async function loop() {
         }
 
         // 非交易时间，跳过
-        if (!timeGuard.isInTradeTime()) {
+        if (!timeGuard.isInStrategyTradeTime()) {
             // 非交易时间清空状态
             strategy = null;
             dailyRisk = null;
@@ -100,6 +91,22 @@ async function loop() {
         }
 
         try {
+            // ===== 交易日初始化, 每天只执行一次 =====
+            if (!inited) {
+                atrManager = new ATRManager();
+                dailyRisk = new RiskManager(config.maxDailyDrawdown);
+                strategy = new VWAPStrategy(config, dailyRisk);
+                // 每次重新拉一遍持仓状态，来初始化持仓状态
+                await strategy!.init();
+                await atrManager.preloadATR();
+
+                const { netAssets: startEquity } = await getAccountEquity();
+                await dailyRisk?.initDay(startEquity);
+
+                logger.info(`初始化结束`);
+                inited = true;
+            }
+
             const { netAssets: equity } = await getAccountEquity();
             // ===== 最高优先级：账户回撤检查 =====
             const shouldStop = dailyRisk!.check(equity);

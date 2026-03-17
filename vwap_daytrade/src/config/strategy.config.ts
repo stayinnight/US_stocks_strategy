@@ -18,19 +18,21 @@ const Config = {
   // 基础参数
   // ========================
   symbols: [
-    'COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'HOOD', 'TSM', 'MSTR',
+    'COIN', 'APP', 'RKLB', 'ORCL', 'IONQ', 'FUTU', 'HOOD', 'TSM', 'MSTR', 'ASTS',
     'BE', 'HIMS', 'MP', 'TSLA', 'BABA', 'INTC', 'AMD', 'PDD', 'MRVL', 'DELL',
-    'SMCI', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN',
+    'SMCI', 'CRDO', 'MU', 'PLTR', 'NFLX', 'LLY', 'LULU', 'CIEN', 'TME', 'NOK',
     'SATS', 'LITE', 'WDC', 'RIVN', 'NOW', 'COHR', 'FCX', 'STX', 'TQQQ', 'YINN',
-    'TNA', 'TECL', 'SOXL', 'DFEN', 'FAS', 'LABU', 'DPST'
+    'TNA', 'TECL', 'SOXL', 'DFEN', 'FAS', 'LABU', 'DPST', 'VRT', 'JD', 'BX', 'GLW'
   ].map(s => s + '.US'),
 
   // ========================
   // VWAP 区间参数
   // ========================
-  vwapBandAtrRatio: 0.12,
+  vwapBandAtrRatio: 0,
+  profitAtrRatio: 0.2,
   vwapSmoothPeriod: 10, // 计算VWAP斜率的时间窗口
-  stopAtrRatio: 0.12,
+  stopAtrRatio: 0.1,
+  // slidingStopAtrRatio: 0.12,
   // tpProtectAtrRatio: 0.2,
   // tpFinalAtrRatio: 0.25,
 
@@ -43,28 +45,48 @@ const Config = {
   // RSI 区间参数
   // ========================
   rsiPeriod: 5,
-  rsiBuyThreshold: 52,
-  rsiSellThreshold: 48,
+  rsiBuyThreshold: 55,
+  rsiSellThreshold: 45,
 
   // ========================
   // 成交量 区间参数
   // ========================
   volumePeriod: 15, 
-  volumeEntryThreshold: 1.2,
+  volumeEntryThreshold: 1.2, // 1.2倍当前成交量
   breakVolumePeriod: 5, // 突破区间
   postVolumePeriod: 10, // 和过去10分钟成交量对比
 
   // ========================
+  // 入场过滤时段配置（分钟）
+  // ========================
+  entryFilterSchedule: {
+    // 开盘后第 N 分钟之前：只看价格突破（不看 RSI / 成交量）
+    rsiVolumeDisabledUntilOpenMinutes: 30,
+    // 收盘前最后 N 分钟：只看价格突破（不看 RSI / 成交量）
+    rsiVolumeDisabledBeforeCloseMinutes: 60,
+  },
+
+  // ========================
   // 时间限制（美股时间，分钟）
   // ========================
-  noTradeAfterOpenMinutes: 20, // 开盘前20分钟不交易
-  noTradeBeforeCloseMinutes: 20, // 收盘前20分钟不交易
+  noTradeAfterOpenMinutes: 5, // 开盘前5分钟不交易
+  noTradeBeforeCloseMinutes: 10, // 收盘前20分钟不交易
   closeTimeMinutes: 10, // 尾盘平仓时间
 
-  marketOpenMinutes: 22 * 60 + 30, // 开盘 10:30
-  marketCloseMinutes: 5 * 60,    // 收盘 5:00
-  // marketOpenMinutes: 9 * 60 + 30, // 09:30
-  // marketCloseMinutes: 16 * 60,    // 16:00
+  // ========================
+  // 指数趋势过滤（用于控制多空方向）
+  // ========================
+  indexTrendFilter: {
+    enabled: true,
+    // 注意：指数符号以 longport 实际可 quote 的为准，这里做成配置避免踩坑
+    indexSymbol: 'QQQ.US',
+    // 斜率计算窗口，默认沿用 vwapSmoothPeriod
+    slopePeriod: 10,
+    // 斜率容忍区间：>epsilon 才允许做多，<-epsilon 才允许做空
+    epsilon: 0,
+    // 斜率不可用（数据不足等）时的处理：block=禁止开仓，pass=放行
+    whenSlopeUnavailable: 'pass',
+  },
 
   // ========================
   // 风控
